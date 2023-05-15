@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 png = "0.17.8"
 sdl2 = "0.35.2"
+
+[profile.dev.package."*"]
+opt-level=3

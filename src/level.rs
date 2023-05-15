@@ -18,13 +18,15 @@ pub struct Camera {
 pub struct Level {
 	level_data: Vec<u8>,
 	level_width: u32,
-	level_height: u32
+	level_height: u32,
+	pub level_scale: f64
 }
 
 impl Level {
 	//Loads the level from a file (a png image)
-	pub fn load_from_file(path: String) -> Result<Level, String> {
-		let level_file = File::open(path.clone());
+	//Does not account for sprites
+	pub fn load_from_png(path: String) -> Result<Level, String> {
+		let level_file = File::open(&path);
 
 		match level_file {
 			Ok(file) => {
@@ -36,7 +38,9 @@ impl Level {
 			
 				Ok(Level { 
 					level_data: buff,
-					level_width: info.width, level_height: info.height
+					level_width: info.width, 
+					level_height: info.height,
+					level_scale: 32.0
 				})
 			},
 			Err(msg) => {
@@ -52,10 +56,8 @@ impl Level {
 						 pixel_buffer: &mut [u8],
 						 buff_width: usize,
 						 buff_height: usize,
-						 cam: &Camera) {
-		//Update the pixel buffer
-		for y in 0..buff_height {
-			
+						 cam: &Camera) {	
+		for y in 0..buff_height {		
 			let depth = 
 				(y as f64 - buff_height as f64 / 8.0 * 3.0) / (buff_height / 8 * 5) as f64;
 			let startx = cam.x_near1 + (cam.x_far1 - cam.x_near1)  / depth;
@@ -74,8 +76,8 @@ impl Level {
 
 				let rotated_x = sample_x * (-cam.rotation).cos() - (-cam.rotation).sin() * sample_z;
 				let rotated_z = sample_x * (-cam.rotation).sin() + (-cam.rotation).cos() * sample_z;
-				let trans_x = (rotated_x + cam.trans_x) * 32.0;
-				let trans_z = (rotated_z + cam.trans_z) * 32.0;
+				let trans_x = (rotated_x + cam.trans_x) * self.level_scale;
+				let trans_z = (rotated_z + cam.trans_z) * self.level_scale;
 
 				let ind = ((trans_x).floor() * 3.0 + (trans_z).floor() * 3.0 * self.level_width as f64) as usize;
 
@@ -89,8 +91,7 @@ impl Level {
 					if trans_x < 0.0 || (trans_x) as u32 >= self.level_width ||
 					   trans_z < 0.0 || (trans_z) as u32 >= self.level_height {
 						continue;
-					}
-					
+					}	
 
 					if ind < self.level_data.len() {
 						pixel_buffer[offset] = self.level_data[ind + 2];
@@ -100,6 +101,20 @@ impl Level {
 				}
 			}
 		}
+	}
+
+	pub fn sample_color(&self, x: f64, z: f64) -> [u8; 3] {
+		if x < 0.0 || x > self.level_width as f64 || z < 0.0 || z > self.level_height as f64 {	
+			return [ 0, 255, 0 ] //Return green (grass) by default		
+		}
+
+		let ind = ((x * self.level_scale).floor() * 3.0 + (z * self.level_scale).floor() * 3.0 * self.level_width as f64) as usize;
+		
+		if ind >= self.level_data.len() {
+			return [ 0, 255, 0 ]		
+		}
+
+		[ self.level_data[ind + 2], self.level_data[ind + 1], self.level_data[ind] ]
 	}
 }
 
