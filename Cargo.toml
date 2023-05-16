@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 png = "0.17.8"
-sdl2 = "0.35.2"
+sdl2 =  { version = "0.35.2", features = [ "ttf" ] }
 
 [profile.dev.package."*"]
 opt-level=3

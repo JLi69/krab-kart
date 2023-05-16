@@ -2,8 +2,10 @@ use sdl2::rect::Rect;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{Texture, BlendMode, TextureCreator, Canvas};
 use sdl2::video::{Window, WindowContext};
+use sdl2::keyboard::Keycode;
 use std::fs::File;
 use crate::level::Camera;
+use crate::events::Events;
 
 pub struct Sprite {
 	pub trans_x: f64, pub trans_z: f64,
@@ -147,8 +149,7 @@ impl Sprite {
 				 (sprite_h as f64 * canvas_dimensions.0 as f64) as u32);	
 		}
 
-		if (self.trans_x - cam.trans_x) * (self.trans_x - cam.trans_x) +
-			(self.trans_z - cam.trans_z) * (self.trans_z - cam.trans_z) < 8.0 * 8.0 {
+		if self.dist2_to_camera(cam) < 16.0 * 16.0 {
 			canv.copy(texture, Rect::new(self.frame * 32, 0, 32, 32), sprite_rect).unwrap();	
 		}
 	}
@@ -205,5 +206,34 @@ impl Sprite {
 	//Returns distance to camera squared
 	pub fn dist2_to_camera(&self, cam: &Camera) -> f64 {
 		(self.trans_x - cam.trans_x) * (self.trans_x - cam.trans_x) + (self.trans_z - cam.trans_z) * (self.trans_z - cam.trans_z)
+	}
+
+	//Drives kart with keys
+	//acceleration key: acclerate forward
+	//left key: turn left
+	//right key: turn right
+	pub fn drive_kart(&mut self, events: &Events, acceleration_key: Keycode, left_key: Keycode, right_key: Keycode) {
+		//Accelerate kart
+		if events.key_is_pressed(acceleration_key) {	
+			//Set kart's speed to be a minimum of 0.5
+			if self.speed < 0.5 {
+				self.speed = 0.5;
+			}
+			
+			self.acceleration = 0.5;	
+		} else {
+			//Stop accelecration once key is released
+			self.acceleration = 0.0;	
+		}
+		
+		//Rotate left and rotate right
+		if events.key_is_pressed(left_key) {
+			self.rotation_speed = -self.speed * 0.75;	
+		} else if events.key_is_pressed(right_key) {	
+			self.rotation_speed = self.speed * 0.75;	
+		} else {	
+			//None of these keys pressed, don't rotate
+			self.rotation_speed = 0.0;	
+		}
 	}
 }

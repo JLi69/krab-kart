@@ -1,4 +1,5 @@
 use std::fs::File;
+use crate::sprite::Sprite;
 
 pub struct Camera {
 	pub trans_x: f64,
@@ -144,5 +145,12 @@ impl Camera {
 			z_near: cam_z_near,
 			z_far: cam_z_far
 		}
+	}
+	
+	//Follow a sprite
+	pub fn follow(&mut self, spr: &Sprite, dist: f64) {	
+		self.trans_x = spr.trans_x - spr.rotation.sin() * dist; 
+		self.trans_z = spr.trans_z - spr.rotation.cos() * dist;
+		self.rotation = spr.rotation;
 	}
 }
