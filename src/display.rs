@@ -140,3 +140,57 @@ pub fn calculate_texture_rect(
         )
     }
 }
+
+//Draws text for the player kart
+pub fn display_player_info(
+    canvas: &mut Canvas<Window>,
+    texture_creator: &TextureCreator<WindowContext>,
+    font: &Font,
+    kart: &Sprite,
+    laps: u32,
+    x: i32,
+    y: i32,
+) -> Result<(), String> {
+    //Display speed
+    display_text_left_justify(
+        canvas,
+        &texture_creator,
+        x + 16,
+        y + 16,
+        &font,
+        format!("speed: {}", ((kart.speed * 100.0 * 20.0).round() / 100.0)),
+        Color::WHITE,
+        16,
+    )
+    .map_err(|e| e.to_string())?;
+
+    display_text_left_justify(
+        canvas,
+        &texture_creator,
+        x + 16,
+        y + 40,
+        &font,
+        format!("laps: {}", laps),
+        Color::WHITE,
+        16,
+    )
+    .map_err(|e| e.to_string())?;
+
+    display_text_left_justify(
+        canvas,
+        &texture_creator,
+        x + 16,
+        y + 80,
+        &font,
+        format!(
+            "pos: {}, {}",
+            ((kart.trans_x * 100.0).round() / 100.0),
+            ((kart.trans_z * 100.0).round() / 100.0)
+        ),
+        Color::WHITE,
+        8,
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

@@ -18,6 +18,7 @@ pub struct Level {
     level_data: Vec<u8>,
     level_width: u32,
     level_height: u32,
+    pub checkpoints: Vec<(f64, f64)>,
     pub level_scale: f64,
 }
 
@@ -39,6 +40,7 @@ impl Level {
                     level_data: buff,
                     level_width: info.width,
                     level_height: info.height,
+                    checkpoints: vec![],
                     level_scale: 32.0,
                 })
             }
@@ -105,6 +107,16 @@ impl Level {
                 }
             }
         }
+    }
+
+    pub fn at_checkpoint(&self, x: f64, z: f64, index: usize, dist: f64) -> bool {
+        if index >= self.checkpoints.len() {
+            return false;
+        }
+
+        (self.checkpoints[index].0 - x) * (self.checkpoints[index].0 - x)
+            + (self.checkpoints[index].1 - z) * (self.checkpoints[index].1 - z)
+            < dist * dist
     }
 
     pub fn sample_color(&self, x: f64, z: f64) -> [u8; 3] {

@@ -26,8 +26,8 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    const WIDTH: usize = 320;
-    const HEIGHT: usize = 180;
+    const WIDTH: usize = 480;
+    const HEIGHT: usize = 270;
 
     //Create canvas
     let mut canvas = window
@@ -47,31 +47,69 @@ fn main() -> Result<(), String> {
     let mut sec_per_frame: f64 = 0.0;
     let mut events = events::Events::new(&sdl_context).map_err(|e| e.to_string())?;
 
-    let mut cam1 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 0.4, 3.14159 / 3.0);
-    let mut cam2 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 0.4, 3.14159 / 3.0);
+    let mut cam1 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 1.2, 3.14159 / 2.0);
+    let mut cam2 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 1.2, 3.14159 / 2.0);
 
-    let mut player_kart1 = sprite::Sprite::new(9.0, 35.2);
+    let mut player_kart1 = sprite::Sprite::new(9.0, 35.5);
     player_kart1.frame_count = 8;
     player_kart1.rotation = 3.14159 / 2.0;
 
-    let mut player_kart2 = sprite::Sprite::new(9.0, 35.0);
+    let mut player_kart2 = sprite::Sprite::new(9.0, 35.1);
     player_kart2.rotation = 3.14159 / 2.0;
     player_kart2.frame_count = 8;
 
-    let krab_texture1 = sprite::load_texture(String::from("res/kart1.png"), &texture_creator)
-        .map_err(|e| e.to_string())?;
+    let krab_texture1 =
+        sprite::load_texture(String::from("res/images/kart1.png"), &texture_creator)
+            .map_err(|e| e.to_string())?;
     player_kart1.set_texture(Some(&krab_texture1));
-    let krab_texture2 = sprite::load_texture(String::from("res/kart2.png"), &texture_creator)
-        .map_err(|e| e.to_string())?;
+    let krab_texture2 =
+        sprite::load_texture(String::from("res/images/kart2.png"), &texture_creator)
+            .map_err(|e| e.to_string())?;
     player_kart2.set_texture(Some(&krab_texture2));
+
+    let checkpoint1_texture = sprite::load_texture(
+        String::from("res/images/kart-checkpoint1.png"),
+        &texture_creator,
+    )
+    .map_err(|e| e.to_string())?;
+    let checkpoint2_texture = sprite::load_texture(
+        String::from("res/images/kart-checkpoint2.png"),
+        &texture_creator,
+    )
+    .map_err(|e| e.to_string())?;
+
     let mut level =
         level::Level::load_from_png(String::from("res/level.png")).map_err(|e| e.to_string())?;
     level.level_scale = 32.0;
+    level.checkpoints = vec![
+        (11.0, 35.3),
+        (34.0, 28.0),
+        (32.0, 7.0),
+        (13.0, 6.0),
+        (11.0, 35.3),
+    ];
+
+    let mut checkpoint1 = sprite::Sprite::new(level.checkpoints[0].0, level.checkpoints[0].1);
+    checkpoint1.set_texture(Some(&checkpoint1_texture));
+    checkpoint1.width = 0.15;
+    checkpoint1.height = 0.15;
+    let mut checkpoint2 = sprite::Sprite::new(level.checkpoints[0].0, level.checkpoints[0].1);
+    checkpoint2.set_texture(Some(&checkpoint2_texture));
+    checkpoint2.width = 0.15;
+    checkpoint2.height = 0.15;
+
+    let mut current_checkpoint_kart1 = 0usize;
+    let mut current_checkpoint_kart2 = 0usize;
+    let mut kart1_laps = 0u32;
+    let mut kart2_laps = 0u32;
 
     let font_ctx = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let font = font_ctx
         .load_font("res/fonts/8BitOperator/8bitOperatorPlus-Regular.ttf", 32)
         .map_err(|e| e.to_string())?;
+
+    let mut fps_update_timer = 0.0;
+    let mut fps = 0.0f64;
 
     while !events.can_quit {
         let start_frame = Instant::now();
@@ -104,6 +142,8 @@ fn main() -> Result<(), String> {
             let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
             sprites_to_draw.push(&mut player_kart1);
             sprites_to_draw.push(&mut player_kart2);
+            sprites_to_draw.push(&mut checkpoint1);
+
             display::display_sprites(
                 &mut canvas,
                 &cam1,
@@ -141,6 +181,8 @@ fn main() -> Result<(), String> {
             let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
             sprites_to_draw.push(&mut player_kart1);
             sprites_to_draw.push(&mut player_kart2);
+            sprites_to_draw.push(&mut checkpoint2);
+
             display::display_sprites(
                 &mut canvas,
                 &cam2,
@@ -155,33 +197,25 @@ fn main() -> Result<(), String> {
         }
         player_kart2.camera_kart = false;
 
-        display::display_text_left_justify(
+        display::display_player_info(
             &mut canvas,
             &texture_creator,
-            16,
-            16,
             &font,
-            format!(
-                "speed: {}",
-                ((player_kart1.speed * 100.0 * 20.0).round() / 100.0)
-            ),
-            Color::WHITE,
-            16,
+            &player_kart1,
+            kart1_laps,
+            0,
+            0,
         )
         .map_err(|e| e.to_string())?;
 
-        display::display_text_left_justify(
+        display::display_player_info(
             &mut canvas,
             &texture_creator,
-            16,
-            16 + canvas_dimensions_half.1 as i32,
             &font,
-            format!(
-                "speed: {}",
-                ((player_kart2.speed * 100.0 * 20.0).round() / 100.0)
-            ),
-            Color::WHITE,
-            16,
+            &player_kart2,
+            kart2_laps,
+            0,
+            canvas_dimensions_half.1 as i32,
         )
         .map_err(|e| e.to_string())?;
 
@@ -191,9 +225,9 @@ fn main() -> Result<(), String> {
             canvas_dimensions.0 as i32 - 16,
             16,
             &font,
-            format!("FPS: {}", ((1.0 / sec_per_frame).round())),
+            format!("FPS: {}", (fps.round())),
             Color::WHITE,
-            16,
+            8,
         )
         .map_err(|e| e.to_string())?;
 
@@ -207,11 +241,50 @@ fn main() -> Result<(), String> {
         player_kart1.move_sprite(sec_per_frame);
         player_kart2.move_sprite(sec_per_frame);
 
+        if level.at_checkpoint(
+            player_kart1.trans_x,
+            player_kart1.trans_z,
+            current_checkpoint_kart1,
+            1.5,
+        ) {
+            if current_checkpoint_kart1 == level.checkpoints.len() - 1 {
+                kart1_laps += 1;
+            }
+
+            current_checkpoint_kart1 += 1;
+            current_checkpoint_kart1 %= level.checkpoints.len();
+            checkpoint1.trans_x = level.checkpoints[current_checkpoint_kart1].0;
+            checkpoint1.trans_z = level.checkpoints[current_checkpoint_kart1].1;
+        }
+
+        if level.at_checkpoint(
+            player_kart2.trans_x,
+            player_kart2.trans_z,
+            current_checkpoint_kart2,
+            1.5,
+        ) {
+            if current_checkpoint_kart2 == level.checkpoints.len() - 1 {
+                kart2_laps += 1;
+            }
+
+            current_checkpoint_kart2 += 1;
+            current_checkpoint_kart2 %= level.checkpoints.len();
+            checkpoint2.trans_x = level.checkpoints[current_checkpoint_kart2].0;
+            checkpoint2.trans_z = level.checkpoints[current_checkpoint_kart2].1;
+        }
+
         player_kart1.apply_friction(&level);
         player_kart2.apply_friction(&level);
 
-        cam1.follow(&player_kart1, 0.75);
-        cam2.follow(&player_kart2, 0.75);
+        cam1.follow(&player_kart1, 1.1);
+        cam2.follow(&player_kart2, 1.1);
+
+        //Update FPS counter
+        fps_update_timer += sec_per_frame;
+        if fps_update_timer > 1.0 {
+            fps = 1.0 / sec_per_frame;
+            fps_update_timer = 0.0;
+        }
 
         sec_per_frame = start_frame.elapsed().as_secs_f64();
     }

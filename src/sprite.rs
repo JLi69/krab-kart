@@ -118,8 +118,8 @@ impl<'a> Sprite<'a> {
             + (self.trans_x - cam.trans_x) * (cam.rotation).sin();
 
         //Scale sprite based on how far it is from the camera
-        let sprite_w = self.width / trans_sprite_z;
-        let sprite_h = self.height / trans_sprite_z;
+        let sprite_w = self.width / (trans_sprite_z);
+        let sprite_h = self.height / (trans_sprite_z);
 
         let spr_screen_y = pixel_buff_height as f64 * (cam.z_far - cam.z_near)
             / ((trans_sprite_z - cam.z_near) * 8.0 / 5.0)
@@ -233,11 +233,11 @@ impl<'a> Sprite<'a> {
 
     //Move the sprite
     pub fn move_sprite(&mut self, dt: f64) {
-        self.speed += (self.acceleration - self.friction) * dt;
-
         if self.speed > self.max_speed {
-            self.speed = self.max_speed;
+            self.acceleration = -(self.speed - self.max_speed) * 0.5;
         }
+
+        self.speed += (self.acceleration - self.friction) * dt;
 
         if self.rotation_speed > self.max_rotation_speed {
             self.rotation_speed = self.max_rotation_speed;
@@ -300,8 +300,11 @@ impl<'a> Sprite<'a> {
         if color[0] == 0 && color[1] >= 128 && color[2] == 0 {
             //Green = grass, slippery
             //set maximum speed as well
-            self.max_speed = 0.75;
+            self.max_speed = 0.5;
             self.friction = 0.1;
+        } else if color[0] == 0 && color[1] >= 128 && color[2] >= 128 {
+            self.max_speed = 6.0;
+            self.speed = 6.0;
         } else {
             //Everything else is road
             self.max_speed = 3.0;
