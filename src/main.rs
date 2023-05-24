@@ -8,6 +8,7 @@ use sdl2::rect::{Point, Rect};
 use sdl2::render::BlendMode;
 
 use std::time::Instant;
+use std::collections::HashMap;
 
 mod display;
 mod events;
@@ -59,27 +60,27 @@ fn main() -> Result<(), String> {
     player_kart2.frame_count = 8;
 
     let krab_texture1 =
-        sprite::load_texture(String::from("res/images/kart1.png"), &texture_creator)
+        sprite::load_texture(String::from("assets/images/kart1.png"), &texture_creator)
             .map_err(|e| e.to_string())?;
     player_kart1.set_texture(Some(&krab_texture1));
     let krab_texture2 =
-        sprite::load_texture(String::from("res/images/kart2.png"), &texture_creator)
+        sprite::load_texture(String::from("assets/images/kart2.png"), &texture_creator)
             .map_err(|e| e.to_string())?;
     player_kart2.set_texture(Some(&krab_texture2));
 
     let checkpoint1_texture = sprite::load_texture(
-        String::from("res/images/kart-checkpoint1.png"),
+        String::from("assets/images/kart-checkpoint1.png"),
         &texture_creator,
     )
     .map_err(|e| e.to_string())?;
     let checkpoint2_texture = sprite::load_texture(
-        String::from("res/images/kart-checkpoint2.png"),
+        String::from("assets/images/kart-checkpoint2.png"),
         &texture_creator,
     )
     .map_err(|e| e.to_string())?;
 
     let mut level =
-        level::Level::load_from_png(String::from("res/level.png")).map_err(|e| e.to_string())?;
+        level::Level::load_from_png(String::from("assets/level.png")).map_err(|e| e.to_string())?;
     level.level_scale = 32.0;
     level.checkpoints = vec![
         (11.0, 35.3),
@@ -97,6 +98,12 @@ fn main() -> Result<(), String> {
     checkpoint2.set_texture(Some(&checkpoint2_texture));
     checkpoint2.width = 0.15;
     checkpoint2.height = 0.15;
+	
+	//BGRA
+	let mut track_textures = HashMap::<u32, sprite::BitMap>::new();
+	track_textures.insert(0x707070ff, sprite::BitMap::from_png(String::from("assets/images/road.png")).map_err(|e| e.to_string())?);
+	track_textures.insert(0x00ff00ff, sprite::BitMap::from_png(String::from("assets/images/grass.png")).map_err(|e| e.to_string())?);
+	track_textures.insert(0x00ffffff, sprite::BitMap::from_png(String::from("assets/images/speedboost.png")).map_err(|e| e.to_string())?);
 
     let mut current_checkpoint_kart1 = 0usize;
     let mut current_checkpoint_kart2 = 0usize;
@@ -105,7 +112,7 @@ fn main() -> Result<(), String> {
 
     let font_ctx = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let font = font_ctx
-        .load_font("res/fonts/8BitOperator/8bitOperatorPlus-Regular.ttf", 32)
+        .load_font("assets/fonts/8BitOperator/8bitOperatorPlus-Regular.ttf", 32)
         .map_err(|e| e.to_string())?;
 
     let mut fps_update_timer = 0.0;
@@ -121,7 +128,7 @@ fn main() -> Result<(), String> {
             display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
 
         let sz = pixel_buffer.len() / 2;
-        level.display_level(&mut pixel_buffer[0..sz], WIDTH, HEIGHT / 2, &cam1);
+        level.display_level(&mut pixel_buffer[0..sz], WIDTH, HEIGHT / 2, &cam1, &track_textures);
         texture
             .update(None, &pixel_buffer[0..sz], WIDTH * 4)
             .map_err(|e| e.to_string())?;
@@ -160,7 +167,7 @@ fn main() -> Result<(), String> {
 
         let origin_y = texture_rect.y() / 2;
 
-        level.display_level(&mut pixel_buffer[sz..], WIDTH, HEIGHT / 2, &cam2);
+        level.display_level(&mut pixel_buffer[sz..], WIDTH, HEIGHT / 2, &cam2, &track_textures);
         texture
             .update(None, &pixel_buffer[sz..], WIDTH * 4)
             .map_err(|e| e.to_string())?;

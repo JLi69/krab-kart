@@ -25,6 +25,12 @@ pub struct Sprite<'a> {
     pub spr_texture: Option<&'a Texture<'a>>,
 }
 
+pub struct BitMap {
+	pixels: Vec<u8>,
+	width: usize,
+	height: usize
+}
+
 //Uses png crate to load bytes from a PNG file and then
 //copies those bytes into a texture
 //Works only on PNG images
@@ -311,4 +317,46 @@ impl<'a> Sprite<'a> {
             self.friction = 0.4;
         }
     }
+}
+
+impl BitMap {
+	//path: png image path
+	pub fn from_png(path: String) -> Result<BitMap, String> {
+		let png_file = File::open(&path);
+
+		match png_file {
+			Ok(file) => {
+				let decoder = png::Decoder::new(file);
+				let mut reader = decoder.read_info().map_err(|e| e.to_string())?;
+            	//Bytes read in from the image, copoy this into the SDL texture
+            	let mut png_buffer = vec![0u8; reader.output_buffer_size()];
+            	// Read the next frame. An APNG might contain multiple frames.
+            	let info = reader
+            	    .next_frame(&mut png_buffer)
+            	    .map_err(|e| e.to_string())?;
+				Ok(BitMap { pixels: png_buffer, width: info.width as usize, height: info.height as usize })	
+			},
+			Err(msg) => {
+				eprintln!("{msg}");
+				eprintln!("failed to open: {path}");
+				Err(String::from("Failed to load bitmap from png file"))
+			}
+		}
+	}
+	
+	//x and y are in the range 0 to 1
+	pub fn sample(&self, x: f64, y: f64) -> [u8; 3] {
+		//Out of range, return black
+		if x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 {
+			return [ 0, 0, 0 ]
+		}
+
+		let ind = (x * self.width as f64).floor() as usize * 3 + self.width * 3 * (y * self.height as f64).floor() as usize;
+	
+		[
+			self.pixels[ind + 2],
+			self.pixels[ind + 1],
+			self.pixels[ind]
+		]
+	}
 }
