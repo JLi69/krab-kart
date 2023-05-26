@@ -1,6 +1,6 @@
-use crate::sprite::{Sprite, BitMap};
-use std::fs::File;
+use crate::sprite::{BitMap, Sprite};
 use std::collections::HashMap;
+use std::fs::File;
 
 pub struct Camera {
     pub trans_x: f64,
@@ -26,7 +26,7 @@ pub struct Level {
 impl Level {
     //Loads the level from a file (a png image)
     //Does not account for sprites
-    pub fn load_from_png(path: String) -> Result<Level, String> {
+    pub fn load_from_png(path: &str) -> Result<Level, String> {
         let level_file = File::open(&path);
 
         match level_file {
@@ -60,31 +60,31 @@ impl Level {
         buff_width: usize,
         buff_height: usize,
         cam: &Camera,
-		track_textures: &HashMap<u32, BitMap>
+        track_textures: &HashMap<u32, BitMap>,
     ) {
         //The sky
-		for y in 0..(buff_height / 8 * 3 + 1) {
+        for y in 0..(buff_height / 8 * 3 + 1) {
             for x in 0..buff_width {
                 let offset = y * 4 * buff_width + x * 4;
                 pixel_buffer[offset] = 255;
                 pixel_buffer[offset + 1] = 128;
                 pixel_buffer[offset + 2] = 32;
-                pixel_buffer[offset + 3] = 255; 
+                pixel_buffer[offset + 3] = 255;
             }
         }
-	
-		//The ground
-		for y in (buff_height / 8 * 3 + 1)..(buff_height) {
+
+        //The ground
+        for y in (buff_height / 8 * 3 + 1)..(buff_height) {
             let depth = (y as f64 - buff_height as f64 / 8.0 * 3.0) / (buff_height / 8 * 5) as f64;
-			let startx = cam.x_near1 + (cam.x_far1 - cam.x_near1) / depth;
+            let startx = cam.x_near1 + (cam.x_far1 - cam.x_near1) / depth;
             let endx = cam.x_near2 + (cam.x_far2 - cam.x_near2) / depth;
 
             let sample_z = cam.z_near + (cam.z_far - cam.z_near) / depth;
 
             for x in 0..buff_width {
                 let offset = y * 4 * buff_width + x * 4;
-				
-				let sample_x = startx + (endx - startx) * (x as f64 / buff_width as f64);
+
+                let sample_x = startx + (endx - startx) * (x as f64 / buff_width as f64);
 
                 let rotated_x = sample_x * (-cam.rotation).cos() - (-cam.rotation).sin() * sample_z;
                 let rotated_z = sample_x * (-cam.rotation).sin() + (-cam.rotation).cos() * sample_z;
@@ -106,47 +106,52 @@ impl Level {
                     || trans_z < 0.0
                     || (trans_z) as u32 >= self.level_height
                 {
-					
-					let pixel_value = (pixel_buffer[offset] as u32) << 24 | 
-									  (pixel_buffer[offset + 1] as u32) << 16 | 
-									  (pixel_buffer[offset + 2] as u32) << 8 |
-									  0xff;	
+                    let pixel_value = (pixel_buffer[offset] as u32) << 24
+                        | (pixel_buffer[offset + 1] as u32) << 16
+                        | (pixel_buffer[offset + 2] as u32) << 8
+                        | 0xff;
 
-					match track_textures.get(&pixel_value) {
-						Some(bitmap) => {
-							let texel = bitmap.sample((trans_x / 16.0).abs().fract(), (trans_z / 16.0).abs().fract());
-							pixel_buffer[offset] = texel[0];
-							pixel_buffer[offset + 1] = texel[1];
-							pixel_buffer[offset + 2] = texel[2];	
-						},
-						_ => { }	
-					}
+                    match track_textures.get(&pixel_value) {
+                        Some(bitmap) => {
+                            let texel = bitmap.sample(
+                                (trans_x / 16.0).abs().fract(),
+                                (trans_z / 16.0).abs().fract(),
+                            );
+                            pixel_buffer[offset] = texel[0];
+                            pixel_buffer[offset + 1] = texel[1];
+                            pixel_buffer[offset + 2] = texel[2];
+                        }
+                        _ => {}
+                    }
 
                     continue;
                 }
 
                 if ind < self.level_data.len() {
-					pixel_buffer[offset] = self.level_data[ind + 2];
+                    pixel_buffer[offset] = self.level_data[ind + 2];
                     pixel_buffer[offset + 1] = self.level_data[ind + 1];
-                    pixel_buffer[offset + 2] = self.level_data[ind]; 
-				}
+                    pixel_buffer[offset + 2] = self.level_data[ind];
+                }
 
-				let pixel_value = (pixel_buffer[offset] as u32) << 24 | 
-								  (pixel_buffer[offset + 1] as u32) << 16 | 
-								  (pixel_buffer[offset + 2] as u32) << 8 |
-								  0xff;	
+                let pixel_value = (pixel_buffer[offset] as u32) << 24
+                    | (pixel_buffer[offset + 1] as u32) << 16
+                    | (pixel_buffer[offset + 2] as u32) << 8
+                    | 0xff;
 
-				match track_textures.get(&pixel_value) {
-					Some(bitmap) => {
-						let texel = bitmap.sample((trans_x / 16.0).abs().fract(), (trans_z / 16.0).abs().fract());
-						pixel_buffer[offset] = texel[0];
-						pixel_buffer[offset + 1] = texel[1];
-						pixel_buffer[offset + 2] = texel[2];	
-					},
-					_ => { }	
-				}
-			}
-		}
+                match track_textures.get(&pixel_value) {
+                    Some(bitmap) => {
+                        let texel = bitmap.sample(
+                            (trans_x / 16.0).abs().fract(),
+                            (trans_z / 16.0).abs().fract(),
+                        );
+                        pixel_buffer[offset] = texel[0];
+                        pixel_buffer[offset + 1] = texel[1];
+                        pixel_buffer[offset + 2] = texel[2];
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
 
     pub fn at_checkpoint(&self, x: f64, z: f64, index: usize, dist: f64) -> bool {
