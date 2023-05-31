@@ -1,4 +1,4 @@
-use crate::sprite::{BitMap, Sprite};
+use crate::sprite::{bitmap::BitMap, Sprite, kart::Kart};
 use std::collections::HashMap;
 use std::fs::File;
 
@@ -73,6 +73,7 @@ impl Level {
             }
         }
 
+
         //The ground
         for y in (buff_height / 8 * 3 + 1)..(buff_height) {
             let depth = (y as f64 - buff_height as f64 / 8.0 * 3.0) / (buff_height / 8 * 5) as f64;
@@ -91,9 +92,8 @@ impl Level {
                 let trans_x = (rotated_x + cam.trans_x) * self.level_scale;
                 let trans_z = (rotated_z + cam.trans_z) * self.level_scale;
 
-                let ind = ((trans_x).floor() * 3.0
-                    + (trans_z).floor() * 3.0 * self.level_width as f64)
-                    as usize;
+                let ind = (trans_x).floor() as usize * 3
+                    + (trans_z).floor() as usize * 3 * self.level_width as usize;
 
                 //Ground
                 pixel_buffer[offset] = 0;
@@ -111,15 +111,13 @@ impl Level {
                         | (pixel_buffer[offset + 2] as u32) << 8
                         | 0xff;
 
-                    match track_textures.get(&pixel_value) {
+                   match track_textures.get(&pixel_value) {
                         Some(bitmap) => {
-                            let texel = bitmap.sample(
+                            bitmap.sample(
                                 (trans_x / 16.0).abs().fract(),
                                 (trans_z / 16.0).abs().fract(),
+								&mut pixel_buffer[offset..(offset + 3)]
                             );
-                            pixel_buffer[offset] = texel[0];
-                            pixel_buffer[offset + 1] = texel[1];
-                            pixel_buffer[offset + 2] = texel[2];
                         }
                         _ => {}
                     }
@@ -140,13 +138,11 @@ impl Level {
 
                 match track_textures.get(&pixel_value) {
                     Some(bitmap) => {
-                        let texel = bitmap.sample(
+                        bitmap.sample(
                             (trans_x / 16.0).abs().fract(),
                             (trans_z / 16.0).abs().fract(),
+							&mut pixel_buffer[offset..(offset + 3)]
                         );
-                        pixel_buffer[offset] = texel[0];
-                        pixel_buffer[offset + 1] = texel[1];
-                        pixel_buffer[offset + 2] = texel[2];
                     }
                     _ => {}
                 }
@@ -154,14 +150,15 @@ impl Level {
         }
     }
 
-    pub fn at_checkpoint(&self, x: f64, z: f64, index: usize, dist: f64) -> bool {
+    pub fn kart_at_checkpoint(&self, spr: &Kart, index: usize, dist: f64) -> bool {
         if index >= self.checkpoints.len() {
             return false;
         }
 
-        (self.checkpoints[index].0 - x) * (self.checkpoints[index].0 - x)
-            + (self.checkpoints[index].1 - z) * (self.checkpoints[index].1 - z)
-            < dist * dist
+        ((self.checkpoints[index].0 - spr.sprite.trans_x) * (self.checkpoints[index].0 - spr.sprite.trans_x)
+            + (self.checkpoints[index].1 - spr.sprite.trans_z) * (self.checkpoints[index].1 - spr.sprite.trans_z))
+            .sqrt()
+            < dist
     }
 
     pub fn sample_color(&self, x: f64, z: f64) -> [u8; 3] {
