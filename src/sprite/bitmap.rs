@@ -42,15 +42,15 @@ impl BitMap {
             pixel_data[0] = 0;
             pixel_data[1] = 0;
             pixel_data[2] = 0;
-			return;
+            return;
         }
 
         let ind = (x * self.width as f64).floor() as usize * 3
             + self.width * 3 * (y * self.height as f64).floor() as usize;
 
-		pixel_data[0] = self.pixels[ind + 2];
-		pixel_data[1] = self.pixels[ind + 1];
-		pixel_data[2] = self.pixels[ind];
+        pixel_data[0] = self.pixels[ind + 2];
+        pixel_data[1] = self.pixels[ind + 1];
+        pixel_data[2] = self.pixels[ind];
     }
 
     pub fn width(&self) -> u32 {

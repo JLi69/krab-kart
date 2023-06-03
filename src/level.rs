@@ -1,4 +1,4 @@
-use crate::sprite::{bitmap::BitMap, Sprite, kart::Kart};
+use crate::sprite::{bitmap::BitMap, kart::Kart, Sprite};
 use std::collections::HashMap;
 use std::fs::File;
 
@@ -73,7 +73,6 @@ impl Level {
             }
         }
 
-
         //The ground
         for y in (buff_height / 8 * 3 + 1)..(buff_height) {
             let depth = (y as f64 - buff_height as f64 / 8.0 * 3.0) / (buff_height / 8 * 5) as f64;
@@ -111,12 +110,12 @@ impl Level {
                         | (pixel_buffer[offset + 2] as u32) << 8
                         | 0xff;
 
-                   match track_textures.get(&pixel_value) {
+                    match track_textures.get(&pixel_value) {
                         Some(bitmap) => {
                             bitmap.sample(
                                 (trans_x / 16.0).abs().fract(),
                                 (trans_z / 16.0).abs().fract(),
-								&mut pixel_buffer[offset..(offset + 3)]
+                                &mut pixel_buffer[offset..(offset + 3)],
                             );
                         }
                         _ => {}
@@ -141,11 +140,12 @@ impl Level {
                         bitmap.sample(
                             (trans_x / 16.0).abs().fract(),
                             (trans_z / 16.0).abs().fract(),
-							&mut pixel_buffer[offset..(offset + 3)]
+                            &mut pixel_buffer[offset..(offset + 3)],
                         );
                     }
                     _ => {}
                 }
+	
             }
         }
     }
@@ -155,8 +155,10 @@ impl Level {
             return false;
         }
 
-        ((self.checkpoints[index].0 - spr.sprite.trans_x) * (self.checkpoints[index].0 - spr.sprite.trans_x)
-            + (self.checkpoints[index].1 - spr.sprite.trans_z) * (self.checkpoints[index].1 - spr.sprite.trans_z))
+        ((self.checkpoints[index].0 - spr.sprite.trans_x)
+            * (self.checkpoints[index].0 - spr.sprite.trans_x)
+            + (self.checkpoints[index].1 - spr.sprite.trans_z)
+                * (self.checkpoints[index].1 - spr.sprite.trans_z))
             .sqrt()
             < dist
     }

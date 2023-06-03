@@ -4,21 +4,21 @@ use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 use std::collections::HashMap;
 
-pub mod load_assets;
 pub mod bitmap;
+pub mod load_assets;
 
 pub mod kart;
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum SpriteType {
-	Kart1,
-	Kart2,
-	Checkpoint1,
-	Checkpoint2,
-	Banana,
-	//Slime,
-	//Fireball,
-	//Powerup
+    Kart1,
+    Kart2,
+    Checkpoint1,
+    Checkpoint2,
+    Banana,
+    //Slime,
+    //Fireball,
+    Powerup
 }
 
 pub struct Sprite<'a> {
@@ -37,26 +37,28 @@ pub struct Sprite<'a> {
     pub frame: i32,
     pub frame_count: i32, //Number of rotation frames that the sprite has
     pub spr_texture: Option<&'a Texture<'a>>,
-	pub sprite_type: SpriteType,
+    pub sprite_type: SpriteType,
 }
 
 impl<'a> Sprite<'a> {
-    pub fn new(x: f64, 
-			   z: f64, 
-			   spr_type: SpriteType,
-			   sprite_assets: &'a HashMap<SpriteType, Texture<'a>>) -> Sprite<'a> {
+    pub fn new(
+        x: f64,
+        z: f64,
+        spr_type: SpriteType,
+        sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
+    ) -> Sprite<'a> {
         let texutre_ref: Option<&Texture<'a>>;
 
-		match sprite_assets.get(&spr_type) {
-			Some(sprite_image) => {
-				texutre_ref = Some(sprite_image);
-			}
-			None => {
-				texutre_ref = None;	
-			}
-		}
+        match sprite_assets.get(&spr_type) {
+            Some(sprite_image) => {
+                texutre_ref = Some(sprite_image);
+            }
+            None => {
+                texutre_ref = None;
+            }
+        }
 
-		Sprite {
+        Sprite {
             trans_x: x,
             trans_z: z,
             rotation: 0.0,
@@ -72,7 +74,7 @@ impl<'a> Sprite<'a> {
             frame_count: 1,
             spr_texture: texutre_ref,
             camera_kart: false,
-			sprite_type: spr_type
+            sprite_type: spr_type,
         }
     }
 
@@ -204,13 +206,33 @@ impl<'a> Sprite<'a> {
             trans_angle -= 3.14159 * 2.0;
         }
         self.frame = (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32;
-    } 
+    }
 
     //Returns distance to camera squared
     pub fn dist2_to_camera(&self, cam: &Camera) -> f64 {
         (self.trans_x - cam.trans_x) * (self.trans_x - cam.trans_x)
             + (self.trans_z - cam.trans_z) * (self.trans_z - cam.trans_z)
-    } 
+    }
+
+	pub fn update(&mut self, dt: f64) {
+		if self.speed > self.max_speed {
+            self.acceleration = -(self.speed - self.max_speed) * 0.5;
+        }
+
+        self.speed += (self.acceleration - self.friction) * dt;
+
+        if self.rotation_speed > self.max_rotation_speed {
+            self.rotation_speed = self.max_rotation_speed;
+        }
+
+        if self.speed < 0.0 {
+            self.speed = 0.0;
+        }
+
+        self.trans_x += self.rotation.sin() * self.speed * dt;
+        self.trans_z += self.rotation.cos() * self.speed * dt;
+        self.rotation += self.rotation_speed * dt;
+	}
 }
 
 //Distance between two sprites

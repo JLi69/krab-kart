@@ -83,6 +83,33 @@ pub fn display_text_left_justify(
     Ok(())
 }
 
+pub fn display_text_center(
+    canvas: &mut Canvas<Window>,
+    texture_creator: &TextureCreator<WindowContext>,
+    x: i32,
+    y: i32,
+    font: &Font,
+    text: String,
+    col: Color,
+    char_sz: u32,
+) -> Result<(), String> {
+    let font_surface = font
+        .render(text.as_str())
+        .solid(col)
+        .map_err(|e| e.to_string())?;
+    let font_texture = texture_creator
+        .create_texture_from_surface(&font_surface)
+        .map_err(|e| e.to_string())?;
+    canvas
+        .copy(
+            &font_texture,
+            None,
+            Rect::new(x - char_sz as i32 * text.len() as i32 / 2, y, char_sz * text.len() as u32, char_sz * 2),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 pub fn display_text_right_justify(
     canvas: &mut Canvas<Window>,
     texture_creator: &TextureCreator<WindowContext>,

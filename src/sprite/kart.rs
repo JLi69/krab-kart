@@ -1,27 +1,29 @@
-use sdl2::keyboard::Keycode;
-use crate::sprite::{Sprite, SpriteType};
-use std::collections::HashMap;
-use sdl2::render::Texture;
-use crate::level::Level;
 use crate::events::Events;
+use crate::level::Level;
+use crate::sprite::{Sprite, SpriteType};
+use sdl2::keyboard::Keycode;
+use sdl2::render::Texture;
+use std::collections::HashMap;
 
 pub struct Kart<'a> {
-	pub sprite: Sprite<'a>,
+    pub sprite: Sprite<'a>,
     pub knock_out: f64, //if the kart is knocked out, this is set to a nonzero value
-    rotation_before_knockout: f64
+    rotation_before_knockout: f64,
 }
 
 impl<'a> Kart<'a> {
-	pub fn new(x: f64, 
-			   z: f64, 
-			   spr_type: SpriteType,
-			   sprite_assets: &'a HashMap<SpriteType, Texture<'a>>) -> Kart<'a> {
-		Kart { 
-			sprite: Sprite::new(x, z, spr_type, sprite_assets),
+    pub fn new(
+        x: f64,
+        z: f64,
+        spr_type: SpriteType,
+        sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
+    ) -> Kart<'a> {
+        Kart {
+            sprite: Sprite::new(x, z, spr_type, sprite_assets),
             knock_out: 0.0,
-			rotation_before_knockout: 0.0 
-		}	
-	}
+            rotation_before_knockout: 0.0,
+        }
+    }
 
     //Apply friction and maximum speed to the kart
     pub fn apply_friction(&mut self, level: &Level) {
@@ -42,7 +44,7 @@ impl<'a> Kart<'a> {
         }
     }
 
-	//Drives kart with keyboard
+    //Drives kart with keyboard
     //acceleration key: acclerate forward
     //left key: turn left
     //right key: turn right
@@ -77,7 +79,7 @@ impl<'a> Kart<'a> {
         }
     }
 
-	//Move the kart 
+    //Move the kart
     pub fn move_kart(&mut self, dt: f64) {
         //Knocked out
         if self.knock_out > 0.0 {
@@ -102,23 +104,10 @@ impl<'a> Kart<'a> {
         }
 
         self.rotation_before_knockout = self.sprite.rotation;
-
-        if self.sprite.speed > self.sprite.max_speed {
-            self.sprite.acceleration = -(self.sprite.speed - self.sprite.max_speed) * 0.5;
-        }
-
-        self.sprite.speed += (self.sprite.acceleration - self.sprite.friction) * dt;
-
-        if self.sprite.rotation_speed > self.sprite.max_rotation_speed {
-            self.sprite.rotation_speed = self.sprite.max_rotation_speed;
-        }
-
-        if self.sprite.speed < 0.0 {
-            self.sprite.speed = 0.0;
-        }
-
-        self.sprite.trans_x += self.sprite.rotation.sin() * self.sprite.speed * dt;
-        self.sprite.trans_z += self.sprite.rotation.cos() * self.sprite.speed * dt;
-        self.sprite.rotation += self.sprite.rotation_speed * dt;
+		self.sprite.update(dt);
     }
+
+	pub fn moving(&self) -> bool {
+		self.sprite.rotation_speed != 0.0 || self.sprite.speed != 0.0
+	}
 }

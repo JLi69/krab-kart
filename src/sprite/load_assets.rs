@@ -1,9 +1,9 @@
 use crate::sprite::SpriteType;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{BlendMode, Texture, TextureCreator};
-use sdl2::video:: WindowContext;
-use std::fs::File;
+use sdl2::video::WindowContext;
 use std::collections::HashMap;
+use std::fs::File;
 
 //Uses png crate to load bytes from a PNG file and then
 //copies those bytes into a texture
@@ -56,34 +56,43 @@ pub fn load_texture<'a>(
 }
 
 pub fn load_assets<'a>(
-	texture_creator: &'a TextureCreator<WindowContext>
-	) -> Result<HashMap<SpriteType, Texture<'a>>, String> {	
-	let mut sprite_images = HashMap::<SpriteType, Texture<'a>>::new();
+    texture_creator: &'a TextureCreator<WindowContext>,
+) -> Result<HashMap<SpriteType, Texture<'a>>, String> {
+    let mut sprite_images = HashMap::<SpriteType, Texture<'a>>::new();
 
-	sprite_images.insert(SpriteType::Kart1,
-						 load_texture("assets/images/kart1.png", texture_creator)
-						 .map_err(|e| e.to_string())?
-						 );
+    sprite_images.insert(
+        SpriteType::Kart1,
+        load_texture("assets/images/kart1.png", texture_creator).map_err(|e| e.to_string())?,
+    );
 
-	sprite_images.insert(SpriteType::Kart2,
-						 load_texture("assets/images/kart2.png", texture_creator)
-						 .map_err(|e| e.to_string())?
-						 );
+    sprite_images.insert(
+        SpriteType::Kart2,
+        load_texture("assets/images/kart2.png", texture_creator).map_err(|e| e.to_string())?,
+    );
 
-	sprite_images.insert(SpriteType::Checkpoint1,
-						 load_texture("assets/images/kart-checkpoint1.png", texture_creator)
-						 .map_err(|e| e.to_string())?
-						 );
+    sprite_images.insert(
+        SpriteType::Checkpoint1,
+        load_texture("assets/images/kart-checkpoint1.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
 
-	sprite_images.insert(SpriteType::Checkpoint2,
-						 load_texture("assets/images/kart-checkpoint2.png", texture_creator)
-						 .map_err(|e| e.to_string())?
-						 );
+    sprite_images.insert(
+        SpriteType::Checkpoint2,
+        load_texture("assets/images/kart-checkpoint2.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
 
-	sprite_images.insert(SpriteType::Banana,
-						 load_texture("assets/images/enemies/banana.png", texture_creator)
-						 .map_err(|e| e.to_string())?
-						 );
+    sprite_images.insert(
+        SpriteType::Banana,
+        load_texture("assets/images/enemies/banana.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
 
-	Ok(sprite_images)
+	sprite_images.insert(
+        SpriteType::Powerup,
+        load_texture("assets/images/powerups/powerupblock.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
+
+    Ok(sprite_images)
 }

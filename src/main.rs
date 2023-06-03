@@ -60,15 +60,18 @@ fn main() -> Result<(), String> {
     let mut cam1 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 1.2, 3.14159 / 2.0);
     let mut cam2 = level::Camera::new(0.0, 0.0, 0.0, 0.01, 1.2, 3.14159 / 2.0);
 
-	let sprite_assets = sprite::load_assets::load_assets(&texture_creator).map_err(|e| e.to_string())?;
+    let sprite_assets =
+        sprite::load_assets::load_assets(&texture_creator).map_err(|e| e.to_string())?;
 
-    let mut player_kart1 = sprite::kart::Kart::new(9.0, 35.5, sprite::SpriteType::Kart1, &sprite_assets);
+    let mut player_kart1 =
+        sprite::kart::Kart::new(9.0, 35.5, sprite::SpriteType::Kart1, &sprite_assets);
     player_kart1.sprite.width = 0.1;
     player_kart1.sprite.height = 0.1;
     player_kart1.sprite.frame_count = 8;
     player_kart1.sprite.rotation = 3.14159 / 2.0;
 
-    let mut player_kart2 = sprite::kart::Kart::new(9.0, 35.1, sprite::SpriteType::Kart2, &sprite_assets);
+    let mut player_kart2 =
+        sprite::kart::Kart::new(9.0, 35.1, sprite::SpriteType::Kart2, &sprite_assets);
     player_kart2.sprite.width = 0.1;
     player_kart2.sprite.height = 0.1;
     player_kart2.sprite.rotation = 3.14159 / 2.0;
@@ -88,17 +91,19 @@ fn main() -> Result<(), String> {
     ];
 
     let mut checkpoint1 = sprite::Sprite::new(
-		level.checkpoints[0].0,
-		level.checkpoints[0].1,
-		sprite::SpriteType::Checkpoint1,
-		&sprite_assets);
+        level.checkpoints[0].0,
+        level.checkpoints[0].1,
+        sprite::SpriteType::Checkpoint1,
+        &sprite_assets,
+    );
     checkpoint1.width = 0.1;
     checkpoint1.height = 0.1;
     let mut checkpoint2 = sprite::Sprite::new(
-		level.checkpoints[0].0,
-		level.checkpoints[0].1, 
-		sprite::SpriteType::Checkpoint1,
-		&sprite_assets);
+        level.checkpoints[0].0,
+        level.checkpoints[0].1,
+        sprite::SpriteType::Checkpoint2,
+        &sprite_assets,
+    );
     checkpoint2.width = 0.1;
     checkpoint2.height = 0.1;
 
@@ -114,7 +119,8 @@ fn main() -> Result<(), String> {
     );
     track_textures.insert(
         0x00ffffff,
-        sprite::bitmap::BitMap::from_png("assets/images/speedboost.png").map_err(|e| e.to_string())?,
+        sprite::bitmap::BitMap::from_png("assets/images/speedboost.png")
+            .map_err(|e| e.to_string())?,
     );
 
     let mut current_checkpoint_kart1 = 0usize;
@@ -129,36 +135,81 @@ fn main() -> Result<(), String> {
 
     let mut fps_update_timer = 0.0;
     let mut fps = 0.0f64;
-	let mut frames = 0u32;
+    let mut frames = 0u32;
 
     player_kart1.move_kart(0.0);
     player_kart2.move_kart(0.0);
 
-    let mut banana = sprite::Sprite::new(
-		player_kart1.sprite.trans_x + 2.0,
-		player_kart1.sprite.trans_z,
-		sprite::SpriteType::Banana,
-		&sprite_assets);
-    banana.width = 0.06;
-    banana.height = 0.06;
+	//Add power ups
+	let mut powerups = Vec::<sprite::Sprite>::new();
+	{	
+		let power_up_locations = vec![
+			(20.0, 35.2),
+			(20.0, 36.0),
+			(20.0, 34.4),
+			
+			(29.5, 22.5),
+			(29.0, 22.0),
+			(28.5, 21.5),
+			
+			(17.0, 5.0),	
+			(16.5, 4.5),
+			(17.5, 4.5),
+			(16.5, 5.5),
+			(17.5, 5.5),
+		];
+
+		for location in power_up_locations {
+			let powerup = sprite::Sprite::new(location.0, 
+											  location.1,
+											  sprite::SpriteType::Powerup,
+											  &sprite_assets);
+			powerups.push(powerup);	
+		}
+	}
+
+	{	
+        let sz = pixel_buffer.len() / 2;
+
+		level.display_level(
+       	    &mut pixel_buffer[0..sz],
+       	    WIDTH,
+       	    HEIGHT / 2,
+       	    &cam1,
+       	    &track_textures,
+       	);
+
+		level.display_level(
+        	&mut pixel_buffer[sz..],
+        	WIDTH,
+        	HEIGHT / 2,
+        	&cam2,
+        	&track_textures,
+        );	
+	}
+
+	let mut start_timer = 3.0f64;
 
     while !events.can_quit {
         let start_frame = Instant::now();
 
-		canvas.clear();
+        canvas.clear();
         let canvas_dimensions = canvas.output_size()?;
         let canvas_dimensions_half = (canvas_dimensions.0, canvas_dimensions.1 / 2);
         let canvas_texture_rect =
             display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
 
         let sz = pixel_buffer.len() / 2;
-		level.display_level(
-            &mut pixel_buffer[0..sz],
-            WIDTH,
-            HEIGHT / 2,
-            &cam1,
-            &track_textures,
-        );
+		
+		if player_kart1.moving() {
+			level.display_level(
+				&mut pixel_buffer[0..sz],
+				WIDTH,
+				HEIGHT / 2,
+				&cam1,
+				&track_textures
+			);
+		}
 
         texture
             .update(None, &pixel_buffer[0..sz], WIDTH * 4)
@@ -181,7 +232,10 @@ fn main() -> Result<(), String> {
             sprites_to_draw.push(&mut player_kart1.sprite);
             sprites_to_draw.push(&mut player_kart2.sprite);
             sprites_to_draw.push(&mut checkpoint1);
-            sprites_to_draw.push(&mut banana);
+
+			for sprite in &mut powerups {
+				sprites_to_draw.push(sprite);	
+			}
 
             display::display_sprites(
                 &mut canvas,
@@ -199,13 +253,15 @@ fn main() -> Result<(), String> {
 
         let origin_y = texture_rect.y() / 2;
 
-		level.display_level(
-            &mut pixel_buffer[sz..],
-            WIDTH,
-            HEIGHT / 2,
-            &cam2,
-            &track_textures,
-        );
+		if player_kart2.moving() {
+			level.display_level(
+        	    &mut pixel_buffer[sz..],
+        	    WIDTH,
+        	    HEIGHT / 2,
+        	    &cam2,
+        	    &track_textures,
+        	);
+		}
         texture
             .update(None, &pixel_buffer[sz..], WIDTH * 4)
             .map_err(|e| e.to_string())?;
@@ -227,7 +283,10 @@ fn main() -> Result<(), String> {
             sprites_to_draw.push(&mut player_kart1.sprite);
             sprites_to_draw.push(&mut player_kart2.sprite);
             sprites_to_draw.push(&mut checkpoint2);
-            sprites_to_draw.push(&mut banana);
+
+			for sprite in &mut powerups {
+				sprites_to_draw.push(sprite);	
+			}
 
             display::display_sprites(
                 &mut canvas,
@@ -271,15 +330,44 @@ fn main() -> Result<(), String> {
             canvas_dimensions.0 as i32 - 16,
             16,
             &font,
-            format!("FPS: {}", (fps.round())),
+            format!("FPS: {}", fps.round()),
             Color::WHITE,
             8,
         )
         .map_err(|e| e.to_string())?;
+	
+		if start_timer.ceil() > 0.0 {
+			display::display_text_center(
+        	    &mut canvas,
+        	    &texture_creator,
+        	    canvas_dimensions.0 as i32 / 2,
+        	    canvas_dimensions.1 as i32 / 2 - 64,
+        	    &font,
+        	    format!("{}", start_timer.ceil()),
+        	    Color::WHITE,
+        	    64,
+        	)
+        	.map_err(|e| e.to_string())?;
+		} else if start_timer.ceil() == 0.0 {
+			display::display_text_center(
+        	    &mut canvas,
+        	    &texture_creator,
+        	    canvas_dimensions.0 as i32 / 2,
+        	    canvas_dimensions.1 as i32 / 2 - 64,
+        	    &font,
+        	    String::from("GO!"),
+        	    Color::WHITE,
+        	    64,
+        	)
+        	.map_err(|e| e.to_string())?;
+		}
+
 
         //Move the karts
-        player_kart1.drive_kart(&events, Keycode::Up, Keycode::Left, Keycode::Right);
-        player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
+        if start_timer <= 0.0 {
+			player_kart1.drive_kart(&events, Keycode::Up, Keycode::Left, Keycode::Right);
+			player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
+		}
 
         player_kart1.move_kart(sec_per_frame);
         player_kart2.move_kart(sec_per_frame);
@@ -309,25 +397,29 @@ fn main() -> Result<(), String> {
         player_kart1.apply_friction(&level);
         player_kart2.apply_friction(&level);
 
-		if player_kart1.knock_out <= 0.0 {
-			cam1.follow(&player_kart1.sprite, 1.1);
-		}
-		if player_kart2.knock_out <= 0.0 {
-			cam2.follow(&player_kart2.sprite, 1.1);
-		}
+        if player_kart1.knock_out <= 0.0 {
+            cam1.follow(&player_kart1.sprite, 1.1);
+        }
+        if player_kart2.knock_out <= 0.0 {
+            cam2.follow(&player_kart2.sprite, 1.1);
+        }
 
         events.update();
         canvas.present();
 
-		frames += 1;
+        frames += 1;
         //Update FPS counter
         fps_update_timer += sec_per_frame;
         if fps_update_timer >= 1.0 {
             fps = frames as f64 - 1.0;
             fps_update_timer = 0.0;
-			frames = 0;
+            frames = 0;
         }
 		
+		if start_timer > -1.0 {
+			start_timer -= sec_per_frame;
+		}
+
         sec_per_frame = start_frame.elapsed().as_secs_f64();
     }
 
