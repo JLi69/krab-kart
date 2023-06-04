@@ -62,7 +62,7 @@ impl<'a> Kart<'a> {
                 self.sprite.speed = 0.5;
             }
 
-            self.sprite.acceleration = 0.6;
+            self.sprite.acceleration = 0.7;
         } else {
             //Stop accelecration once key is released
             self.sprite.acceleration = 0.0;
@@ -104,10 +104,10 @@ impl<'a> Kart<'a> {
         }
 
         self.rotation_before_knockout = self.sprite.rotation;
-		self.sprite.update(dt);
+        self.sprite.update(dt);
     }
 
-	pub fn moving(&self) -> bool {
-		self.sprite.rotation_speed != 0.0 || self.sprite.speed != 0.0
-	}
+    pub fn moving(&self) -> bool {
+        self.sprite.rotation_speed != 0.0 || self.sprite.speed != 0.0
+    }
 }

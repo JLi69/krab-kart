@@ -140,55 +140,94 @@ fn main() -> Result<(), String> {
     player_kart1.move_kart(0.0);
     player_kart2.move_kart(0.0);
 
-	//Add power ups
-	let mut powerups = Vec::<sprite::Sprite>::new();
-	{	
-		let power_up_locations = vec![
-			(20.0, 35.2),
-			(20.0, 36.0),
-			(20.0, 34.4),
-			
-			(29.5, 22.5),
-			(29.0, 22.0),
-			(28.5, 21.5),
-			
-			(17.0, 5.0),	
-			(16.5, 4.5),
-			(17.5, 4.5),
-			(16.5, 5.5),
-			(17.5, 5.5),
-		];
+    //Add power ups
+    let mut powerups = Vec::<sprite::Sprite>::new();
+    {
+        let power_up_locations = vec![
+            (20.0, 35.2),
+            (20.0, 36.0),
+            (20.0, 34.4),
+            (29.5, 22.5),
+            (29.0, 22.0),
+            (28.5, 21.5),
+            (17.0, 5.0),
+            (16.5, 4.5),
+            (17.5, 4.5),
+            (16.5, 5.5),
+            (17.5, 5.5),
+        ];
 
-		for location in power_up_locations {
-			let powerup = sprite::Sprite::new(location.0, 
-											  location.1,
-											  sprite::SpriteType::Powerup,
-											  &sprite_assets);
-			powerups.push(powerup);	
-		}
-	}
+        for location in power_up_locations {
+            let powerup = sprite::Sprite::new(
+                location.0,
+                location.1,
+                sprite::SpriteType::Powerup,
+                &sprite_assets,
+            );
+            powerups.push(powerup);
+        }
+    }
 
-	{	
+	//Add enemies 
+    let mut enemies = Vec::<sprite::enemy::Enemy>::new();
+    {
+        let enemy_locations = vec![
+            (31.0, 18.0),
+			
+			(22.0, 4.0),
+			(22.5, 7.0),
+			(23.0, 4.0),
+
+			(10.5, 17.0),
+			(7.5, 15.5),
+			(10.5, 16.0),
+        ];
+
+		let enemy_goal_pos = vec![
+            (31.0, 16.0),
+			
+			(22.0, 7.0),
+			(22.5, 4.0),
+			(23.0, 7.0),
+			
+			(7.5, 16.0),
+			(10.5, 16.5),
+			(7.5, 15.0),
+        ];
+
+        for i in 0..enemy_locations.len() {
+            let enemy = sprite::enemy::Enemy::new(
+                enemy_locations[i].0,
+                enemy_locations[i].1,
+                enemy_goal_pos[i].0,
+                enemy_goal_pos[i].1,
+				&sprite_assets,
+            );
+            enemies.push(enemy);
+        }
+    }
+
+    {
         let sz = pixel_buffer.len() / 2;
 
-		level.display_level(
-       	    &mut pixel_buffer[0..sz],
-       	    WIDTH,
-       	    HEIGHT / 2,
-       	    &cam1,
-       	    &track_textures,
-       	);
+        level.display_level(
+            &mut pixel_buffer[0..sz],
+            WIDTH,
+            HEIGHT / 2,
+            &cam1,
+            &track_textures,
+        );
 
-		level.display_level(
-        	&mut pixel_buffer[sz..],
-        	WIDTH,
-        	HEIGHT / 2,
-        	&cam2,
-        	&track_textures,
-        );	
-	}
+        level.display_level(
+            &mut pixel_buffer[sz..],
+            WIDTH,
+            HEIGHT / 2,
+            &cam2,
+            &track_textures,
+        );
+    }
 
-	let mut start_timer = 3.0f64;
+    let mut start_timer = 3.0f64;
 
     while !events.can_quit {
         let start_frame = Instant::now();
@@ -200,16 +239,16 @@ fn main() -> Result<(), String> {
             display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
 
         let sz = pixel_buffer.len() / 2;
-		
-		if player_kart1.moving() {
-			level.display_level(
-				&mut pixel_buffer[0..sz],
-				WIDTH,
-				HEIGHT / 2,
-				&cam1,
-				&track_textures
-			);
-		}
+
+        if player_kart1.moving() {
+            level.display_level(
+                &mut pixel_buffer[0..sz],
+                WIDTH,
+                HEIGHT / 2,
+                &cam1,
+                &track_textures,
+            );
+        }
 
         texture
             .update(None, &pixel_buffer[0..sz], WIDTH * 4)
@@ -233,9 +272,13 @@ fn main() -> Result<(), String> {
             sprites_to_draw.push(&mut player_kart2.sprite);
             sprites_to_draw.push(&mut checkpoint1);
 
-			for sprite in &mut powerups {
-				sprites_to_draw.push(sprite);	
-			}
+            for sprite in &mut powerups {
+                sprites_to_draw.push(sprite);
+            }
+
+			for enemy in &mut enemies {
+                sprites_to_draw.push(&mut enemy.sprite);
+            }
 
             display::display_sprites(
                 &mut canvas,
@@ -253,15 +296,15 @@ fn main() -> Result<(), String> {
 
         let origin_y = texture_rect.y() / 2;
 
-		if player_kart2.moving() {
-			level.display_level(
-        	    &mut pixel_buffer[sz..],
-        	    WIDTH,
-        	    HEIGHT / 2,
-        	    &cam2,
-        	    &track_textures,
-        	);
-		}
+        if player_kart2.moving() {
+            level.display_level(
+                &mut pixel_buffer[sz..],
+                WIDTH,
+                HEIGHT / 2,
+                &cam2,
+                &track_textures,
+            );
+        }
         texture
             .update(None, &pixel_buffer[sz..], WIDTH * 4)
             .map_err(|e| e.to_string())?;
@@ -284,9 +327,13 @@ fn main() -> Result<(), String> {
             sprites_to_draw.push(&mut player_kart2.sprite);
             sprites_to_draw.push(&mut checkpoint2);
 
-			for sprite in &mut powerups {
-				sprites_to_draw.push(sprite);	
-			}
+            for sprite in &mut powerups {
+                sprites_to_draw.push(sprite);
+            }
+
+			for enemy in &mut enemies {
+                sprites_to_draw.push(&mut enemy.sprite);
+            }
 
             display::display_sprites(
                 &mut canvas,
@@ -335,44 +382,78 @@ fn main() -> Result<(), String> {
             8,
         )
         .map_err(|e| e.to_string())?;
-	
-		if start_timer.ceil() > 0.0 {
-			display::display_text_center(
-        	    &mut canvas,
-        	    &texture_creator,
-        	    canvas_dimensions.0 as i32 / 2,
-        	    canvas_dimensions.1 as i32 / 2 - 64,
-        	    &font,
-        	    format!("{}", start_timer.ceil()),
-        	    Color::WHITE,
-        	    64,
-        	)
-        	.map_err(|e| e.to_string())?;
-		} else if start_timer.ceil() == 0.0 {
-			display::display_text_center(
-        	    &mut canvas,
-        	    &texture_creator,
-        	    canvas_dimensions.0 as i32 / 2,
-        	    canvas_dimensions.1 as i32 / 2 - 64,
-        	    &font,
-        	    String::from("GO!"),
-        	    Color::WHITE,
-        	    64,
-        	)
-        	.map_err(|e| e.to_string())?;
-		}
 
+        if start_timer.ceil() > 0.0 {
+            display::display_text_center(
+                &mut canvas,
+                &texture_creator,
+                canvas_dimensions.0 as i32 / 2,
+                canvas_dimensions.1 as i32 / 2 - 64,
+                &font,
+                format!("{}", start_timer.ceil()),
+                Color::WHITE,
+                64,
+            )
+            .map_err(|e| e.to_string())?;
+        } else if start_timer.ceil() == 0.0 {
+            display::display_text_center(
+                &mut canvas,
+                &texture_creator,
+                canvas_dimensions.0 as i32 / 2,
+                canvas_dimensions.1 as i32 / 2 - 64,
+                &font,
+                String::from("GO!"),
+                Color::WHITE,
+                64,
+            )
+            .map_err(|e| e.to_string())?;
+        }
+
+		//Victory at 4 laps
+		if kart1_laps == 4 {
+            display::display_text_center(
+                &mut canvas,
+                &texture_creator,
+                canvas_dimensions.0 as i32 / 2,
+                canvas_dimensions.1 as i32 / 2 - 32,
+                &font,
+                String::from("PLAYER 1 WINS!"),
+                Color::RED,
+                32,
+            )
+            .map_err(|e| e.to_string())?;
+			player_kart1.sprite.speed = 0.0;
+			player_kart1.sprite.rotation_speed = 0.0;
+			player_kart2.sprite.speed = 0.0;
+			player_kart2.sprite.rotation_speed = 0.0; 
+		} else if kart2_laps == 4 {
+			display::display_text_center(
+                &mut canvas,
+                &texture_creator,
+                canvas_dimensions.0 as i32 / 2,
+                canvas_dimensions.1 as i32 / 2 - 32,
+                &font,
+                String::from("PLAYER 2 WINS!"),
+                Color::BLUE,
+                32,
+            )
+            .map_err(|e| e.to_string())?;	
+			player_kart1.sprite.speed = 0.0;
+			player_kart1.sprite.rotation_speed = 0.0;
+			player_kart2.sprite.speed = 0.0;
+			player_kart2.sprite.rotation_speed = 0.0;
+		}
 
         //Move the karts
-        if start_timer <= 0.0 {
-			player_kart1.drive_kart(&events, Keycode::Up, Keycode::Left, Keycode::Right);
-			player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
-		}
+		if start_timer <= 0.0 && kart1_laps < 4 && kart2_laps < 4 {
+            player_kart1.drive_kart(&events, Keycode::Up, Keycode::Left, Keycode::Right);
+            player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
+        }
 
         player_kart1.move_kart(sec_per_frame);
         player_kart2.move_kart(sec_per_frame);
 
-        if level.kart_at_checkpoint(&player_kart1, current_checkpoint_kart1, 1.0) {
+        if level.kart_at_checkpoint(&player_kart1, current_checkpoint_kart1, 1.5) {
             if current_checkpoint_kart1 == level.checkpoints.len() - 1 {
                 kart1_laps += 1;
             }
@@ -383,7 +464,7 @@ fn main() -> Result<(), String> {
             checkpoint1.trans_z = level.checkpoints[current_checkpoint_kart1].1;
         }
 
-        if level.kart_at_checkpoint(&player_kart2, current_checkpoint_kart2, 1.0) {
+        if level.kart_at_checkpoint(&player_kart2, current_checkpoint_kart2, 1.5) {
             if current_checkpoint_kart2 == level.checkpoints.len() - 1 {
                 kart2_laps += 1;
             }
@@ -404,6 +485,19 @@ fn main() -> Result<(), String> {
             cam2.follow(&player_kart2.sprite, 1.1);
         }
 
+		for enemy in &mut enemies {
+			if sprite::dist_between(&enemy.sprite, &player_kart1.sprite) < 0.2 &&
+			   player_kart1.knock_out <= 0.0 {
+				player_kart1.knock_out = 1.0;
+			}
+			if sprite::dist_between(&enemy.sprite, &player_kart2.sprite) < 0.2 &&
+			   player_kart2.knock_out <= 0.0 {
+				player_kart2.knock_out = 1.0;
+			}
+
+			enemy.update(sec_per_frame);
+		}
+
         events.update();
         canvas.present();
 
@@ -415,10 +509,10 @@ fn main() -> Result<(), String> {
             fps_update_timer = 0.0;
             frames = 0;
         }
-		
-		if start_timer > -1.0 {
-			start_timer -= sec_per_frame;
-		}
+
+        if start_timer > -1.0 {
+            start_timer -= sec_per_frame;
+        }
 
         sec_per_frame = start_frame.elapsed().as_secs_f64();
     }

@@ -6,8 +6,8 @@ use std::collections::HashMap;
 
 pub mod bitmap;
 pub mod load_assets;
-
 pub mod kart;
+pub mod enemy;
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum SpriteType {
@@ -16,9 +16,9 @@ pub enum SpriteType {
     Checkpoint1,
     Checkpoint2,
     Banana,
-    //Slime,
+    Enemy,
     //Fireball,
-    Powerup
+    Powerup,
 }
 
 pub struct Sprite<'a> {
@@ -214,8 +214,8 @@ impl<'a> Sprite<'a> {
             + (self.trans_z - cam.trans_z) * (self.trans_z - cam.trans_z)
     }
 
-	pub fn update(&mut self, dt: f64) {
-		if self.speed > self.max_speed {
+    pub fn update(&mut self, dt: f64) {
+        if self.speed > self.max_speed {
             self.acceleration = -(self.speed - self.max_speed) * 0.5;
         }
 
@@ -232,7 +232,7 @@ impl<'a> Sprite<'a> {
         self.trans_x += self.rotation.sin() * self.speed * dt;
         self.trans_z += self.rotation.cos() * self.speed * dt;
         self.rotation += self.rotation_speed * dt;
-	}
+    }
 }
 
 //Distance between two sprites

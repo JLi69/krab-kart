@@ -88,9 +88,15 @@ pub fn load_assets<'a>(
             .map_err(|e| e.to_string())?,
     );
 
-	sprite_images.insert(
+    sprite_images.insert(
         SpriteType::Powerup,
         load_texture("assets/images/powerups/powerupblock.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
+
+	sprite_images.insert(
+        SpriteType::Enemy,
+        load_texture("assets/images/enemies/ghost.png", texture_creator)
             .map_err(|e| e.to_string())?,
     );
 

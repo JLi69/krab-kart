@@ -104,7 +104,12 @@ pub fn display_text_center(
         .copy(
             &font_texture,
             None,
-            Rect::new(x - char_sz as i32 * text.len() as i32 / 2, y, char_sz * text.len() as u32, char_sz * 2),
+            Rect::new(
+                x - char_sz as i32 * text.len() as i32 / 2,
+                y,
+                char_sz * text.len() as u32,
+                char_sz * 2,
+            ),
         )
         .map_err(|e| e.to_string())?;
     Ok(())
