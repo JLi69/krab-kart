@@ -134,18 +134,18 @@ impl<'a> Kart<'a> {
     }
 
     pub fn use_powerup(&mut self) -> PowerupType {
-		if self.knock_out > 0.0 {	
-            return PowerupType::Empty
-		}
+        if self.knock_out > 0.0 {
+            return PowerupType::Empty;
+        }
 
         if let PowerupType::Empty = self.powerup {
             self.powerup_amt = 0;
-            return PowerupType::Empty
+            return PowerupType::Empty;
         }
 
         if self.powerup_amt > 0 {
             self.powerup_amt -= 1;
-            return self.powerup
+            return self.powerup;
         }
 
         self.powerup = PowerupType::Empty;

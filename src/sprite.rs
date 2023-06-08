@@ -244,8 +244,8 @@ pub fn dist_between(spr1: &Sprite, spr2: &Sprite) -> f64 {
 }
 
 pub fn xz_diff_norm(spr1: &Sprite, spr2: &Sprite) -> (f64, f64) {
-	let dist = dist_between(spr1, spr2);
-	let xdiff = spr1.trans_x - spr2.trans_x;
-	let zdiff = spr1.trans_z - spr2.trans_z;
-	(xdiff / dist, zdiff / dist)
+    let dist = dist_between(spr1, spr2);
+    let xdiff = spr1.trans_x - spr2.trans_x;
+    let zdiff = spr1.trans_z - spr2.trans_z;
+    (xdiff / dist, zdiff / dist)
 }

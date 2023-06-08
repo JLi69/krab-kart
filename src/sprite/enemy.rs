@@ -9,9 +9,9 @@ pub struct Enemy<'a> {
 }
 
 pub struct Fireball<'a> {
-	pub sprite: Sprite<'a>,
-	pub target: SpriteType,
-	pub timer: f64
+    pub sprite: Sprite<'a>,
+    pub target: SpriteType,
+    pub timer: f64,
 }
 
 impl<'a> Enemy<'a> {
@@ -49,33 +49,33 @@ impl<'a> Enemy<'a> {
 }
 
 impl<'a> Fireball<'a> {
-	pub fn new(
+    pub fn new(
         x: f64,
         z: f64,
         sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
-		target_type: SpriteType
-	) -> Fireball<'a> {
+        target_type: SpriteType,
+    ) -> Fireball<'a> {
         Fireball {
             sprite: Sprite::new(x, z, SpriteType::Fireball, sprite_assets),
-			timer: 0.0,
-			target: target_type
+            timer: 0.0,
+            target: target_type,
         }
     }
 
-	pub fn update(&mut self, dt: f64, target: &Sprite) {
-		self.timer += dt;
-	
-		let dist = ((target.trans_x - self.sprite.trans_x) * 
-				   (target.trans_x - self.sprite.trans_x) +
-				   (target.trans_z - self.sprite.trans_z) * 
-				   (target.trans_z - self.sprite.trans_z)).sqrt();
-		let xdiff = target.trans_x - self.sprite.trans_x;
-		let zdiff = target.trans_z - self.sprite.trans_z;
-		
-		let speedx = xdiff / dist * 4.0;
-		let speedz = zdiff / dist * 4.0;
+    pub fn update(&mut self, dt: f64, target: &Sprite) {
+        self.timer += dt;
 
-		self.sprite.trans_x += speedx * dt;
-		self.sprite.trans_z += speedz * dt;
-	}
+        let dist = ((target.trans_x - self.sprite.trans_x)
+            * (target.trans_x - self.sprite.trans_x)
+            + (target.trans_z - self.sprite.trans_z) * (target.trans_z - self.sprite.trans_z))
+            .sqrt();
+        let xdiff = target.trans_x - self.sprite.trans_x;
+        let zdiff = target.trans_z - self.sprite.trans_z;
+
+        let speedx = xdiff / dist * 4.0;
+        let speedz = zdiff / dist * 4.0;
+
+        self.sprite.trans_x += speedx * dt;
+        self.sprite.trans_z += speedz * dt;
+    }
 }

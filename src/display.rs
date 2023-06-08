@@ -1,9 +1,9 @@
 use crate::level::Camera;
+use crate::sprite::kart::{Kart, PowerupType};
 use crate::sprite::Sprite;
-use crate::sprite::kart::{PowerupType, Kart};
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
-use sdl2::render::{Canvas, TextureCreator, Texture};
+use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::ttf::Font;
 use sdl2::video::{Window, WindowContext};
 use std::collections::HashMap;
@@ -188,7 +188,8 @@ pub fn display_player_info(
     //Display speed
     display_text_left_justify(
         canvas,
-        &texture_creator, x + 16,
+        &texture_creator,
+        x + 16,
         y + 16,
         &font,
         format!("speed: {}", ((kart.speed * 100.0 * 20.0).round() / 100.0)),
@@ -229,23 +230,33 @@ pub fn display_player_info(
 }
 
 pub fn display_powerup_icons(
-	canvas: &mut Canvas<Window>,
-	icons: &HashMap<PowerupType, Texture>,
-	icon_sz: u32,
+    canvas: &mut Canvas<Window>,
+    icons: &HashMap<PowerupType, Texture>,
+    icon_sz: u32,
     kart: &Kart,
     x: i32,
     y: i32,
 ) -> Result<(), String> {
+    for i in 0..kart.powerup_amt {
+        match icons.get(&kart.powerup) {
+            Some(tex) => {
+                canvas
+                    .copy(
+                        tex,
+                        None,
+                        Rect::new(
+                            x + i as i32 * icon_sz as i32 / 4 * 3
+                                - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3,
+                            y,
+                            icon_sz,
+                            icon_sz,
+                        ),
+                    )
+                    .map_err(|e| e.to_string())?;
+            }
+            _ => {}
+        }
+    }
 
-	for i in 0..kart.powerup_amt {
-		match icons.get(&kart.powerup) {
-			Some(tex) => {
-				canvas.copy(tex, None, Rect::new(x + i as i32 * icon_sz as i32 / 4 * 3 - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3, y, icon_sz, icon_sz))
-					.map_err(|e| e.to_string())?; 
-			},
-			_ => {}
-		}
-	}
-
-	Ok(())
+    Ok(())
 }

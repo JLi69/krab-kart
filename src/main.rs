@@ -62,8 +62,8 @@ fn main() -> Result<(), String> {
 
     let sprite_assets =
         sprite::load_assets::load_assets(&texture_creator).map_err(|e| e.to_string())?;
-	let powerup_icons =
-        sprite::load_assets::load_powerup_icon_assets(&texture_creator).map_err(|e| e.to_string())?;
+    let powerup_icons = sprite::load_assets::load_powerup_icon_assets(&texture_creator)
+        .map_err(|e| e.to_string())?;
 
     let mut player_kart1 =
         sprite::kart::Kart::new(9.0, 35.5, sprite::SpriteType::Kart1, &sprite_assets);
@@ -220,8 +220,8 @@ fn main() -> Result<(), String> {
         );
     }
 
-	let mut bananas = Vec::<sprite::Sprite>::new();
-	let mut fireballs = Vec::<sprite::enemy::Fireball>::new();
+    let mut bananas = Vec::<sprite::Sprite>::new();
+    let mut fireballs = Vec::<sprite::enemy::Fireball>::new();
 
     let mut start_timer = 3.0f64;
 
@@ -276,13 +276,13 @@ fn main() -> Result<(), String> {
                 sprites_to_draw.push(&mut enemy.sprite);
             }
 
-			for fireball in &mut fireballs {
+            for fireball in &mut fireballs {
                 sprites_to_draw.push(&mut fireball.sprite);
             }
 
-			for banana in &mut bananas {
-				sprites_to_draw.push(banana);	
-			}
+            for banana in &mut bananas {
+                sprites_to_draw.push(banana);
+            }
 
             display::display_sprites(
                 &mut canvas,
@@ -339,13 +339,13 @@ fn main() -> Result<(), String> {
                 sprites_to_draw.push(&mut enemy.sprite);
             }
 
-			for fireball in &mut fireballs {
+            for fireball in &mut fireballs {
                 sprites_to_draw.push(&mut fireball.sprite);
             }
 
-			for banana in &mut bananas {
-				sprites_to_draw.push(banana);	
-			}
+            for banana in &mut bananas {
+                sprites_to_draw.push(banana);
+            }
 
             display::display_sprites(
                 &mut canvas,
@@ -372,15 +372,15 @@ fn main() -> Result<(), String> {
         )
         .map_err(|e| e.to_string())?;
 
-		display::display_powerup_icons(
-			&mut canvas,
-			&powerup_icons,
-			48,
-			&player_kart1,
-			(canvas_dimensions.0 / 2) as i32,
-			16
-		)
-		.map_err(|e| e.to_string())?;
+        display::display_powerup_icons(
+            &mut canvas,
+            &powerup_icons,
+            48,
+            &player_kart1,
+            (canvas_dimensions.0 / 2) as i32,
+            16,
+        )
+        .map_err(|e| e.to_string())?;
 
         display::display_player_info(
             &mut canvas,
@@ -392,16 +392,16 @@ fn main() -> Result<(), String> {
             canvas_dimensions_half.1 as i32,
         )
         .map_err(|e| e.to_string())?;
-		
-		display::display_powerup_icons(
-			&mut canvas,
-			&powerup_icons,
-			48,
-			&player_kart2,
-			(canvas_dimensions.0 / 2) as i32,
-			canvas_dimensions_half.1 as i32 + 16
-		)
-		.map_err(|e| e.to_string())?;
+
+        display::display_powerup_icons(
+            &mut canvas,
+            &powerup_icons,
+            48,
+            &player_kart2,
+            (canvas_dimensions.0 / 2) as i32,
+            canvas_dimensions_half.1 as i32 + 16,
+        )
+        .map_err(|e| e.to_string())?;
 
         display::display_text_right_justify(
             &mut canvas,
@@ -475,63 +475,63 @@ fn main() -> Result<(), String> {
             player_kart2.sprite.speed = 0.0;
             player_kart2.sprite.rotation_speed = 0.0;
         }
-	
-		//Check for player collision with bananas
-		let mut index = 0;
-		while index < bananas.len() {	
-			let banana = &bananas[index];		
-			index += 1;	
 
-			if sprite::dist_between(banana, &player_kart1.sprite) < 0.1 {
-				player_kart1.knock_out = 3.0;	
-				bananas.remove(index - 1);
-				index -= 1;	
-				continue;
-			}
-			
-			if sprite::dist_between(banana, &player_kart2.sprite) < 0.1 {	
-				player_kart2.knock_out = 3.0;
-				bananas.remove(index - 1);
-				index -= 1;
-				continue;
-			}
-		}
-		
-		//Update the fireballs
-		let mut index = 0;
-		while index < fireballs.len() {	
-			let fireball = &mut fireballs[index];
-			match fireball.target {
-				sprite::SpriteType::Kart1 => {		
-					fireball.update(sec_per_frame, &player_kart1.sprite);
-				},
-				sprite::SpriteType::Kart2 => {	
-					fireball.update(sec_per_frame, &player_kart2.sprite);
-				}
-				_ => {}
-			}
-			index += 1;	
+        //Check for player collision with bananas
+        let mut index = 0;
+        while index < bananas.len() {
+            let banana = &bananas[index];
+            index += 1;
 
-			if sprite::dist_between(&fireball.sprite, &player_kart1.sprite) < 0.1 {
-				player_kart1.knock_out = 2.0;
-				fireballs.remove(index - 1);
-				index -= 1;	
-				continue;
-			}
-			
-			if sprite::dist_between(&fireball.sprite, &player_kart2.sprite) < 0.1 {	
-				player_kart2.knock_out = 2.0;
-				fireballs.remove(index - 1);
-				index -= 1;
-				continue;
-			}
+            if sprite::dist_between(banana, &player_kart1.sprite) < 0.1 {
+                player_kart1.knock_out = 3.0;
+                bananas.remove(index - 1);
+                index -= 1;
+                continue;
+            }
 
-			if fireball.timer > 8.0 {
-				fireballs.remove(index - 1);
-				index -= 1;
-				continue;
-			}
-		}
+            if sprite::dist_between(banana, &player_kart2.sprite) < 0.1 {
+                player_kart2.knock_out = 3.0;
+                bananas.remove(index - 1);
+                index -= 1;
+                continue;
+            }
+        }
+
+        //Update the fireballs
+        let mut index = 0;
+        while index < fireballs.len() {
+            let fireball = &mut fireballs[index];
+            match fireball.target {
+                sprite::SpriteType::Kart1 => {
+                    fireball.update(sec_per_frame, &player_kart1.sprite);
+                }
+                sprite::SpriteType::Kart2 => {
+                    fireball.update(sec_per_frame, &player_kart2.sprite);
+                }
+                _ => {}
+            }
+            index += 1;
+
+            if sprite::dist_between(&fireball.sprite, &player_kart1.sprite) < 0.1 {
+                player_kart1.knock_out = 2.0;
+                fireballs.remove(index - 1);
+                index -= 1;
+                continue;
+            }
+
+            if sprite::dist_between(&fireball.sprite, &player_kart2.sprite) < 0.1 {
+                player_kart2.knock_out = 2.0;
+                fireballs.remove(index - 1);
+                index -= 1;
+                continue;
+            }
+
+            if fireball.timer > 8.0 {
+                fireballs.remove(index - 1);
+                index -= 1;
+                continue;
+            }
+        }
 
         //Move the karts
         if start_timer <= 0.0 && kart1_laps < 4 && kart2_laps < 4 {
@@ -539,69 +539,69 @@ fn main() -> Result<(), String> {
             player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
             player_kart1.move_kart(sec_per_frame);
             player_kart2.move_kart(sec_per_frame);
-        
-			//Use powerups
-			if events.key_is_pressed_once(Keycode::Down) {
-				let powerup = player_kart1.use_powerup();	
-				match powerup {
-					sprite::kart::PowerupType::SpeedBoost => {
-						player_kart1.sprite.speed += 1.0;	
-					},
-					sprite::kart::PowerupType::Banana => {
-						let mut banana = sprite::Sprite::new(
-							player_kart1.sprite.trans_x - 0.3 * player_kart1.sprite.rotation.sin(),
-							player_kart1.sprite.trans_z - 0.3 * player_kart1.sprite.rotation.cos(),
-							sprite::SpriteType::Banana,
-							&sprite_assets
-						);
-						banana.width = 0.06;
-						banana.height = 0.06;
-						bananas.push(banana);	
-					},
-					sprite::kart::PowerupType::Fireball => {
-						let (xdiff, ydiff) = 
-							sprite::xz_diff_norm(&player_kart2.sprite, &player_kart1.sprite);
-						fireballs.push(sprite::enemy::Fireball::new(
-							player_kart1.sprite.trans_x + 0.3 * xdiff,
-							player_kart1.sprite.trans_z + 0.3 * ydiff,
-							&sprite_assets,
-							sprite::SpriteType::Kart2,
-						));	
-					},
-					_ => {}
-				}
-			}
-			if events.key_is_pressed_once(Keycode::S) {
-				let powerup = player_kart2.use_powerup();	
-				match powerup {
-					sprite::kart::PowerupType::SpeedBoost => {
-						player_kart2.sprite.speed += 1.0;	
-					},
-					sprite::kart::PowerupType::Banana => {
-						let mut banana = sprite::Sprite::new(
-							player_kart2.sprite.trans_x - 0.3 * player_kart2.sprite.rotation.sin(),
-							player_kart2.sprite.trans_z - 0.3 * player_kart2.sprite.rotation.cos(),
-							sprite::SpriteType::Banana,
-							&sprite_assets
-						);
-						banana.width = 0.06;
-						banana.height = 0.06;
-						bananas.push(banana);
-					},
-					sprite::kart::PowerupType::Fireball => {
-						let (xdiff, ydiff) = 
-							sprite::xz_diff_norm(&player_kart1.sprite, &player_kart2.sprite);
-						fireballs.push(sprite::enemy::Fireball::new(
-							player_kart2.sprite.trans_x + 0.3 * xdiff,
-							player_kart2.sprite.trans_z + 0.3 * ydiff,
-							&sprite_assets,
-							sprite::SpriteType::Kart1,
-						));	
-					},
-					_ => {}
-				}	
-			}
-		}
+
+            //Use powerups
+            if events.key_is_pressed_once(Keycode::Down) {
+                let powerup = player_kart1.use_powerup();
+                match powerup {
+                    sprite::kart::PowerupType::SpeedBoost => {
+                        player_kart1.sprite.speed += 1.0;
+                    }
+                    sprite::kart::PowerupType::Banana => {
+                        let mut banana = sprite::Sprite::new(
+                            player_kart1.sprite.trans_x - 0.3 * player_kart1.sprite.rotation.sin(),
+                            player_kart1.sprite.trans_z - 0.3 * player_kart1.sprite.rotation.cos(),
+                            sprite::SpriteType::Banana,
+                            &sprite_assets,
+                        );
+                        banana.width = 0.06;
+                        banana.height = 0.06;
+                        bananas.push(banana);
+                    }
+                    sprite::kart::PowerupType::Fireball => {
+                        let (xdiff, ydiff) =
+                            sprite::xz_diff_norm(&player_kart2.sprite, &player_kart1.sprite);
+                        fireballs.push(sprite::enemy::Fireball::new(
+                            player_kart1.sprite.trans_x + 0.3 * xdiff,
+                            player_kart1.sprite.trans_z + 0.3 * ydiff,
+                            &sprite_assets,
+                            sprite::SpriteType::Kart2,
+                        ));
+                    }
+                    _ => {}
+                }
+            }
+            if events.key_is_pressed_once(Keycode::S) {
+                let powerup = player_kart2.use_powerup();
+                match powerup {
+                    sprite::kart::PowerupType::SpeedBoost => {
+                        player_kart2.sprite.speed += 1.0;
+                    }
+                    sprite::kart::PowerupType::Banana => {
+                        let mut banana = sprite::Sprite::new(
+                            player_kart2.sprite.trans_x - 0.3 * player_kart2.sprite.rotation.sin(),
+                            player_kart2.sprite.trans_z - 0.3 * player_kart2.sprite.rotation.cos(),
+                            sprite::SpriteType::Banana,
+                            &sprite_assets,
+                        );
+                        banana.width = 0.06;
+                        banana.height = 0.06;
+                        bananas.push(banana);
+                    }
+                    sprite::kart::PowerupType::Fireball => {
+                        let (xdiff, ydiff) =
+                            sprite::xz_diff_norm(&player_kart1.sprite, &player_kart2.sprite);
+                        fireballs.push(sprite::enemy::Fireball::new(
+                            player_kart2.sprite.trans_x + 0.3 * xdiff,
+                            player_kart2.sprite.trans_z + 0.3 * ydiff,
+                            &sprite_assets,
+                            sprite::SpriteType::Kart1,
+                        ));
+                    }
+                    _ => {}
+                }
+            }
+        }
 
         if level.kart_at_checkpoint(&player_kart1, current_checkpoint_kart1, 1.5) {
             if current_checkpoint_kart1 == level.checkpoints.len() - 1 {
@@ -653,21 +653,21 @@ fn main() -> Result<(), String> {
         for powerup in &mut powerups {
             if sprite::dist_between(&powerup.sprite, &player_kart1.sprite) < 0.2
                 && powerup.sprite.width >= powerup.size
-				&& player_kart1.powerup_amt == 0
+                && player_kart1.powerup_amt == 0
             {
                 powerup.sprite.width = 0.0;
                 powerup.sprite.height = 0.0;
-				player_kart1.pickup_powerup();
+                player_kart1.pickup_powerup();
             }
             if sprite::dist_between(&powerup.sprite, &player_kart2.sprite) < 0.2
                 && powerup.sprite.width >= powerup.size
-				&& powerup.sprite.width >= powerup.size
-				&& player_kart2.powerup_amt == 0
+                && powerup.sprite.width >= powerup.size
+                && player_kart2.powerup_amt == 0
             {
                 powerup.sprite.width = 0.0;
                 powerup.sprite.height = 0.0;
-				player_kart2.pickup_powerup();
-			}
+                player_kart2.pickup_powerup();
+            }
 
             powerup.update(sec_per_frame);
         }
