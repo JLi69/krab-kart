@@ -5,9 +5,10 @@ use sdl2::video::Window;
 use std::collections::HashMap;
 
 pub mod bitmap;
-pub mod load_assets;
-pub mod kart;
 pub mod enemy;
+pub mod kart;
+pub mod load_assets;
+pub mod powerup;
 
 #[derive(PartialEq, Eq, Hash)]
 pub enum SpriteType {
@@ -17,7 +18,7 @@ pub enum SpriteType {
     Checkpoint2,
     Banana,
     Enemy,
-    //Fireball,
+    Fireball,
     Powerup,
 }
 
@@ -240,4 +241,11 @@ pub fn dist_between(spr1: &Sprite, spr2: &Sprite) -> f64 {
     ((spr1.trans_x - spr2.trans_x) * (spr1.trans_x - spr2.trans_x)
         + (spr1.trans_z - spr2.trans_z) * (spr1.trans_z - spr2.trans_z))
         .sqrt()
+}
+
+pub fn xz_diff_norm(spr1: &Sprite, spr2: &Sprite) -> (f64, f64) {
+	let dist = dist_between(spr1, spr2);
+	let xdiff = spr1.trans_x - spr2.trans_x;
+	let zdiff = spr1.trans_z - spr2.trans_z;
+	(xdiff / dist, zdiff / dist)
 }

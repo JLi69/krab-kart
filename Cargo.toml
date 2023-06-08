@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 png = "0.17.8"
+rand = "0.8.5"
 sdl2 =  { version = "0.35.2", features = [ "ttf" ] }
 
 [target.'cfg(windows)'.build-dependencies]

@@ -1,4 +1,5 @@
 use crate::sprite::SpriteType;
+use crate::sprite::kart::PowerupType;
 use sdl2::pixels::PixelFormatEnum;
 use sdl2::render::{BlendMode, Texture, TextureCreator};
 use sdl2::video::WindowContext;
@@ -94,11 +95,41 @@ pub fn load_assets<'a>(
             .map_err(|e| e.to_string())?,
     );
 
-	sprite_images.insert(
+    sprite_images.insert(
         SpriteType::Enemy,
         load_texture("assets/images/enemies/ghost.png", texture_creator)
             .map_err(|e| e.to_string())?,
     );
 
+	sprite_images.insert(
+        SpriteType::Fireball,
+        load_texture("assets/images/enemies/fireball.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
+
     Ok(sprite_images)
+}
+
+pub fn load_powerup_icon_assets<'a>(
+    texture_creator: &'a TextureCreator<WindowContext>,
+) -> Result<HashMap<PowerupType, Texture<'a>>, String> {
+    let mut powerup_icons = HashMap::<PowerupType, Texture<'a>>::new();
+
+    powerup_icons.insert(
+        PowerupType::Banana,
+        load_texture("assets/images/powerups/bananaicon.png", texture_creator).map_err(|e| e.to_string())?,
+    );
+
+    powerup_icons.insert(
+        PowerupType::SpeedBoost,
+        load_texture("assets/images/powerups/speedboosticon.png", texture_creator).map_err(|e| e.to_string())?,
+    );
+
+    powerup_icons.insert(
+        PowerupType::Fireball,
+        load_texture("assets/images/powerups/fireballicon.png", texture_creator)
+            .map_err(|e| e.to_string())?,
+    );
+
+    Ok(powerup_icons)
 }

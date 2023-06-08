@@ -5,9 +5,19 @@ use sdl2::keyboard::Keycode;
 use sdl2::render::Texture;
 use std::collections::HashMap;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub enum PowerupType {
+    Empty,
+    SpeedBoost,
+    Fireball,
+    Banana,
+}
+
 pub struct Kart<'a> {
     pub sprite: Sprite<'a>,
     pub knock_out: f64, //if the kart is knocked out, this is set to a nonzero value
+    pub powerup: PowerupType,
+    pub powerup_amt: u16,
     rotation_before_knockout: f64,
 }
 
@@ -22,6 +32,8 @@ impl<'a> Kart<'a> {
             sprite: Sprite::new(x, z, spr_type, sprite_assets),
             knock_out: 0.0,
             rotation_before_knockout: 0.0,
+            powerup: PowerupType::Empty,
+            powerup_amt: 0,
         }
     }
 
@@ -109,5 +121,34 @@ impl<'a> Kart<'a> {
 
     pub fn moving(&self) -> bool {
         self.sprite.rotation_speed != 0.0 || self.sprite.speed != 0.0
+    }
+
+    pub fn pickup_powerup(&mut self) {
+        self.powerup_amt = rand::random::<u16>() % 3 + 1;
+        let powerup_types = [
+            PowerupType::SpeedBoost,
+            PowerupType::Fireball,
+            PowerupType::Banana,
+        ];
+        self.powerup = powerup_types[rand::random::<usize>() % 3];
+    }
+
+    pub fn use_powerup(&mut self) -> PowerupType {
+		if self.knock_out > 0.0 {	
+            return PowerupType::Empty
+		}
+
+        if let PowerupType::Empty = self.powerup {
+            self.powerup_amt = 0;
+            return PowerupType::Empty
+        }
+
+        if self.powerup_amt > 0 {
+            self.powerup_amt -= 1;
+            return self.powerup
+        }
+
+        self.powerup = PowerupType::Empty;
+        PowerupType::Empty
     }
 }

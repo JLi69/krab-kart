@@ -30,7 +30,7 @@ impl Events {
                 Event::Quit { .. } => self.can_quit = true,
                 //Keydown, add keycode to hashset of keys pressed
                 Event::KeyDown {
-                    keycode: Some(k), ..
+                    keycode: Some(k), repeat: false, ..
                 } => {
                     self.pressed_keys.insert(k);
                 }
@@ -47,5 +47,11 @@ impl Events {
 
     pub fn key_is_pressed(&self, keycode: Keycode) -> bool {
         self.pressed_keys.contains(&keycode)
+    }
+
+	pub fn key_is_pressed_once(&mut self, keycode: Keycode) -> bool {
+        let pressed = self.pressed_keys.contains(&keycode);
+		self.pressed_keys.remove(&keycode);
+		pressed
     }
 }
