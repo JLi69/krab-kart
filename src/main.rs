@@ -256,7 +256,7 @@ fn main() -> Result<(), String> {
                     events.can_quit = true;
                 } else if oneplayer_button.clicked(&mut events, &canvas_dimensions) {
                     timer = 0.0;
-					start_timer = 3.0;
+                    start_timer = 3.0;
                     screen = GameScreen::OnePlayer;
                     oneplayer::init(
                         &mut player_kart1,
@@ -422,13 +422,14 @@ fn main() -> Result<(), String> {
                         sprites_to_draw.push(&mut enemy.sprite);
                     }
 
-					let origin_y = texture_rect.y() / 2;
+                    let origin_y = texture_rect.y() / 2;
                     display::display_sprites(
                         &mut canvas,
                         &cam1,
                         &mut sprites_to_draw,
                         &canvas_dimensions_half,
-                        origin_y + texture_rect.height() as i32 / 2 - canvas_dimensions_half.1 as i32,
+                        origin_y + texture_rect.height() as i32 / 2
+                            - canvas_dimensions_half.1 as i32,
                         &(0, canvas_dimensions_half.1 as i32),
                         WIDTH,
                         HEIGHT / 2,
