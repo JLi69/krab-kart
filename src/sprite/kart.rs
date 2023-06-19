@@ -18,6 +18,8 @@ pub struct Kart<'a> {
     pub knock_out: f64, //if the kart is knocked out, this is set to a nonzero value
     pub powerup: PowerupType,
     pub powerup_amt: u16,
+    pub laps: u32,
+    pub current_checkpoint: usize,
     rotation_before_knockout: f64,
 }
 
@@ -33,6 +35,8 @@ impl<'a> Kart<'a> {
             knock_out: 0.0,
             rotation_before_knockout: 0.0,
             powerup: PowerupType::Empty,
+            laps: 0,
+            current_checkpoint: 0,
             powerup_amt: 0,
         }
     }

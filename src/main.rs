@@ -1,7 +1,6 @@
 #![windows_subsystem = "windows"]
 extern crate sdl2;
 
-use sdl2::keyboard::Keycode;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::{Point, Rect};
 use sdl2::render::BlendMode;
@@ -10,10 +9,24 @@ use sdl2::surface::Surface;
 use std::collections::HashMap;
 use std::time::Instant;
 
+/*
+ * "Mama mia, that's a lotta spaghetti!"
+ * */
+
 mod display;
 mod events;
 mod level;
 mod sprite;
+
+mod menu;
+mod oneplayer;
+mod twoplayer;
+
+enum GameScreen {
+    MainMenu,
+    OnePlayer,
+    TwoPlayer,
+}
 
 fn main() -> Result<(), String> {
     // Initialize SDL2
@@ -125,11 +138,6 @@ fn main() -> Result<(), String> {
             .map_err(|e| e.to_string())?,
     );
 
-    let mut current_checkpoint_kart1 = 0usize;
-    let mut current_checkpoint_kart2 = 0usize;
-    let mut kart1_laps = 0u32;
-    let mut kart2_laps = 0u32;
-
     let font_ctx = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let font = font_ctx
         .load_font("assets/fonts/8BitOperator/8bitOperatorPlus-Regular.ttf", 32)
@@ -144,264 +152,671 @@ fn main() -> Result<(), String> {
 
     //Add power ups
     let mut powerups = Vec::<sprite::powerup::Powerup>::new();
-    {
-        let power_up_locations = vec![
-            (20.0, 35.2),
-            (20.0, 36.0),
-            (20.0, 34.4),
-            (29.5, 22.5),
-            (29.0, 22.0),
-            (28.5, 21.5),
-            (17.0, 5.0),
-            (16.5, 4.5),
-            (17.5, 4.5),
-            (16.5, 5.5),
-            (17.5, 5.5),
-        ];
-
-        for location in power_up_locations {
-            let powerup = sprite::powerup::Powerup::new(location.0, location.1, &sprite_assets);
-            powerups.push(powerup);
-        }
-    }
 
     //Add enemies
     let mut enemies = Vec::<sprite::enemy::Enemy>::new();
-    {
-        let enemy_locations = vec![
-            (31.0, 18.0),
-            (22.0, 4.0),
-            (22.5, 7.0),
-            (23.0, 4.0),
-            (10.5, 17.0),
-            (7.5, 15.5),
-            (10.5, 16.0),
-        ];
-
-        let enemy_goal_pos = vec![
-            (31.0, 16.0),
-            (22.0, 7.0),
-            (22.5, 4.0),
-            (23.0, 7.0),
-            (7.5, 16.0),
-            (10.5, 16.5),
-            (7.5, 15.0),
-        ];
-
-        for i in 0..enemy_locations.len() {
-            let enemy = sprite::enemy::Enemy::new(
-                enemy_locations[i].0,
-                enemy_locations[i].1,
-                enemy_goal_pos[i].0,
-                enemy_goal_pos[i].1,
-                &sprite_assets,
-            );
-            enemies.push(enemy);
-        }
-    }
-
-    {
-        let sz = pixel_buffer.len() / 2;
-
-        level.display_level(
-            &mut pixel_buffer[0..sz],
-            WIDTH,
-            HEIGHT / 2,
-            &cam1,
-            &track_textures,
-        );
-
-        level.display_level(
-            &mut pixel_buffer[sz..],
-            WIDTH,
-            HEIGHT / 2,
-            &cam2,
-            &track_textures,
-        );
-    }
 
     let mut bananas = Vec::<sprite::Sprite>::new();
     let mut fireballs = Vec::<sprite::enemy::Fireball>::new();
 
     let mut start_timer = 3.0f64;
 
+    let mut screen = GameScreen::MainMenu;
+
+    //buttons
+    let oneplayer_button = menu::Button::new(0, -32, "One Player");
+    let twoplayer_button = menu::Button::new(0, 16, "Two Player");
+    let quit_button = menu::Button::new(0, 64, "QUIT");
+
+    let goto_menu = menu::Button::new(0, 0, "Main Menu");
+    let goto_game = menu::Button::new(0, 48, "Return to Game");
+
+    let mut paused = false;
+    let mut timer = 0.0f64; //Timer for single player mode
+
     while !events.can_quit {
         let start_frame = Instant::now();
 
+        canvas.set_draw_color(Color::RGB(32, 128, 255));
         canvas.clear();
         let canvas_dimensions = canvas.output_size()?;
         let canvas_dimensions_half = (canvas_dimensions.0, canvas_dimensions.1 / 2);
         let canvas_texture_rect =
             display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
 
-        let sz = pixel_buffer.len() / 2;
+        match screen {
+            GameScreen::MainMenu => {
+                cam1.rotation += sec_per_frame * 0.2;
 
-        if player_kart1.moving() {
-            level.display_level(
-                &mut pixel_buffer[0..sz],
-                WIDTH,
-                HEIGHT / 2,
-                &cam1,
-                &track_textures,
-            );
+                //Background
+                level.display_level(
+                    &mut pixel_buffer[0..],
+                    WIDTH,
+                    HEIGHT / 2,
+                    &cam1,
+                    &track_textures,
+                );
+
+                texture
+                    .update(None, &pixel_buffer[0..], WIDTH * 4)
+                    .map_err(|e| e.to_string())?;
+                let texture_rect = Rect::from_center(
+                    Point::new(
+                        canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
+                        canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4 * 3,
+                    ),
+                    canvas_texture_rect.width(),
+                    canvas_texture_rect.height() / 2,
+                );
+                canvas
+                    .copy(&texture, None, texture_rect)
+                    .map_err(|e| e.to_string())?;
+
+                display::display_text_center(
+                    &mut canvas,
+                    &texture_creator,
+                    (canvas_dimensions.0 / 2) as i32,
+                    (canvas_dimensions.1 / 4) as i32 - 64,
+                    &font,
+                    String::from("Krab Kart"),
+                    Color::WHITE,
+                    64,
+                )
+                .map_err(|e| e.to_string())?;
+
+                oneplayer_button
+                    .display(
+                        &mut canvas,
+                        &canvas_dimensions,
+                        &texture_creator,
+                        &events,
+                        &font,
+                    )
+                    .map_err(|e| e.to_string())?;
+                twoplayer_button
+                    .display(
+                        &mut canvas,
+                        &canvas_dimensions,
+                        &texture_creator,
+                        &events,
+                        &font,
+                    )
+                    .map_err(|e| e.to_string())?;
+                quit_button
+                    .display(
+                        &mut canvas,
+                        &canvas_dimensions,
+                        &texture_creator,
+                        &events,
+                        &font,
+                    )
+                    .map_err(|e| e.to_string())?;
+
+                if quit_button.clicked(&mut events, &canvas_dimensions) {
+                    events.can_quit = true;
+                } else if oneplayer_button.clicked(&mut events, &canvas_dimensions) {
+                    timer = 0.0;
+					start_timer = 3.0;
+                    screen = GameScreen::OnePlayer;
+                    oneplayer::init(
+                        &mut player_kart1,
+                        &mut cam1,
+                        &mut enemies,
+                        &sprite_assets,
+                        &mut checkpoint1,
+                        &level.checkpoints[0],
+                    );
+
+                    level.display_level(
+                        &mut pixel_buffer[0..],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam1,
+                        &track_textures,
+                    );
+                } else if twoplayer_button.clicked(&mut events, &canvas_dimensions) {
+                    start_timer = 3.0;
+                    screen = GameScreen::TwoPlayer;
+                    twoplayer::init(
+                        &mut player_kart1,
+                        &mut player_kart2,
+                        &mut cam1,
+                        &mut cam2,
+                        &mut powerups,
+                        &mut enemies,
+                        &mut bananas,
+                        &mut fireballs,
+                        &sprite_assets,
+                        &mut checkpoint1,
+                        &mut checkpoint2,
+                        &level.checkpoints[0],
+                    );
+
+                    let sz = pixel_buffer.len() / 2;
+
+                    level.display_level(
+                        &mut pixel_buffer[0..sz],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam1,
+                        &track_textures,
+                    );
+
+                    level.display_level(
+                        &mut pixel_buffer[sz..],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam2,
+                        &track_textures,
+                    );
+                }
+            }
+            GameScreen::OnePlayer => {
+                //Display Level
+                if player_kart1.moving() {
+                    level.display_level(
+                        &mut pixel_buffer[0..],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam1,
+                        &track_textures,
+                    );
+                }
+
+                let texture_rect = Rect::from_center(
+                    Point::new(
+                        canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
+                        canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4 * 3,
+                    ),
+                    canvas_texture_rect.width(),
+                    canvas_texture_rect.height() / 2,
+                );
+
+                texture
+                    .update(None, &pixel_buffer[0..], WIDTH * 4)
+                    .map_err(|e| e.to_string())?;
+                canvas
+                    .copy(&texture, None, texture_rect)
+                    .map_err(|e| e.to_string())?;
+
+                display::display_start_timer(
+                    &mut canvas,
+                    &texture_creator,
+                    &canvas_dimensions,
+                    &font,
+                    start_timer,
+                )
+                .map_err(|e| e.to_string())?;
+
+                display::display_player_info(
+                    &mut canvas,
+                    &texture_creator,
+                    &font,
+                    &player_kart1,
+                    0,
+                    0,
+                )
+                .map_err(|e| e.to_string())?;
+
+                //Print DONE when player reaches 4 laps
+                if player_kart1.laps >= 4 {
+                    display::display_text_center(
+                        &mut canvas,
+                        &texture_creator,
+                        canvas_dimensions.0 as i32 / 2,
+                        canvas_dimensions.1 as i32 / 2 - 32,
+                        &font,
+                        String::from("DONE!"),
+                        Color::WHITE,
+                        32,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+
+                if player_kart1.laps < 4 && start_timer < 0.0 && !paused {
+                    timer += sec_per_frame;
+                }
+
+                //Display timer
+                if timer - 60.0 * (timer / 60.0).floor() < 10.0 {
+                    display::display_text_center(
+                        &mut canvas,
+                        &texture_creator,
+                        canvas_dimensions.0 as i32 / 2,
+                        canvas_dimensions.1 as i32 / 8 - 32,
+                        &font,
+                        format!(
+                            "{}:0{}",
+                            (timer / 60.0).floor(),
+                            (timer - 60.0 * (timer / 60.0).floor()).round()
+                        ),
+                        Color::WHITE,
+                        32,
+                    )
+                    .map_err(|e| e.to_string())?;
+                } else {
+                    display::display_text_center(
+                        &mut canvas,
+                        &texture_creator,
+                        canvas_dimensions.0 as i32 / 2,
+                        canvas_dimensions.1 as i32 / 8 - 32,
+                        &font,
+                        format!(
+                            "{}:{}",
+                            (timer / 60.0).floor(),
+                            (timer - 60.0 * (timer / 60.0).floor()).round()
+                        ),
+                        Color::WHITE,
+                        32,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+
+                player_kart1.sprite.camera_kart = player_kart1.knock_out <= 0.0;
+                {
+                    let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
+                    sprites_to_draw.push(&mut player_kart1.sprite);
+                    sprites_to_draw.push(&mut checkpoint1);
+
+                    for enemy in &mut enemies {
+                        sprites_to_draw.push(&mut enemy.sprite);
+                    }
+
+					let origin_y = texture_rect.y() / 2;
+                    display::display_sprites(
+                        &mut canvas,
+                        &cam1,
+                        &mut sprites_to_draw,
+                        &canvas_dimensions_half,
+                        origin_y + texture_rect.height() as i32 / 2 - canvas_dimensions_half.1 as i32,
+                        &(0, canvas_dimensions_half.1 as i32),
+                        WIDTH,
+                        HEIGHT / 2,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                player_kart1.sprite.camera_kart = false;
+
+                if paused {
+                    canvas.set_draw_color(Color::RGBA(128, 128, 128, 200));
+                    canvas
+                        .fill_rect(Rect::new(0, 0, canvas_dimensions.0, canvas_dimensions.1))
+                        .map_err(|e| e.to_string())?;
+
+                    display::display_text_center(
+                        &mut canvas,
+                        &texture_creator,
+                        canvas_dimensions.0 as i32 / 2,
+                        canvas_dimensions.1 as i32 / 4 - 64,
+                        &font,
+                        String::from("PAUSED"),
+                        Color::WHITE,
+                        64,
+                    )
+                    .map_err(|e| e.to_string())?;
+
+                    goto_menu
+                        .display(
+                            &mut canvas,
+                            &canvas_dimensions,
+                            &texture_creator,
+                            &events,
+                            &font,
+                        )
+                        .map_err(|e| e.to_string())?;
+                    goto_game
+                        .display(
+                            &mut canvas,
+                            &canvas_dimensions,
+                            &texture_creator,
+                            &events,
+                            &font,
+                        )
+                        .map_err(|e| e.to_string())?;
+
+                    if goto_game.clicked(&mut events, &canvas_dimensions) {
+                        paused = false;
+                    } else if goto_menu.clicked(&mut events, &canvas_dimensions) {
+                        player_kart1 = sprite::kart::Kart::new(
+                            9.0,
+                            35.5,
+                            sprite::SpriteType::Kart1,
+                            &sprite_assets,
+                        );
+                        player_kart1.sprite.rotation = 3.14159 / 2.0;
+                        cam1.follow(&player_kart1.sprite, 1.1);
+                        paused = false;
+                        screen = GameScreen::MainMenu;
+                    }
+                }
+
+                if events.key_is_pressed_once(sdl2::keyboard::Keycode::Escape) {
+                    paused = !paused;
+                }
+
+                //Update the player
+                if !paused {
+                    oneplayer::update_enemies(&mut enemies, &mut player_kart1, sec_per_frame);
+
+                    //Move the karts
+                    oneplayer::update_karts(
+                        &mut player_kart1,
+                        &mut checkpoint1,
+                        &mut cam1,
+                        &events,
+                        &level,
+                        sec_per_frame,
+                        start_timer,
+                    );
+
+                    if start_timer > -1.0 {
+                        start_timer -= sec_per_frame;
+                    }
+                }
+            }
+            GameScreen::TwoPlayer => {
+                let sz = pixel_buffer.len() / 2;
+
+                if player_kart1.moving() {
+                    level.display_level(
+                        &mut pixel_buffer[0..sz],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam1,
+                        &track_textures,
+                    );
+                }
+
+                texture
+                    .update(None, &pixel_buffer[0..sz], WIDTH * 4)
+                    .map_err(|e| e.to_string())?;
+                let texture_rect = Rect::from_center(
+                    Point::new(
+                        canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
+                        canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4,
+                    ),
+                    canvas_texture_rect.width(),
+                    canvas_texture_rect.height() / 2,
+                );
+                canvas
+                    .copy(&texture, None, texture_rect)
+                    .map_err(|e| e.to_string())?;
+
+                player_kart1.sprite.camera_kart = player_kart1.knock_out <= 0.0;
+                {
+                    let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
+                    sprites_to_draw.push(&mut player_kart1.sprite);
+                    sprites_to_draw.push(&mut player_kart2.sprite);
+                    sprites_to_draw.push(&mut checkpoint1);
+
+                    for powerup in &mut powerups {
+                        sprites_to_draw.push(&mut powerup.sprite);
+                    }
+
+                    for enemy in &mut enemies {
+                        sprites_to_draw.push(&mut enemy.sprite);
+                    }
+
+                    for fireball in &mut fireballs {
+                        sprites_to_draw.push(&mut fireball.sprite);
+                    }
+
+                    for banana in &mut bananas {
+                        sprites_to_draw.push(banana);
+                    }
+
+                    display::display_sprites(
+                        &mut canvas,
+                        &cam1,
+                        &mut sprites_to_draw,
+                        &canvas_dimensions_half,
+                        texture_rect.y() / 2,
+                        &(0, 0),
+                        WIDTH,
+                        HEIGHT / 2,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                player_kart1.sprite.camera_kart = false;
+
+                let origin_y = texture_rect.y() / 2;
+
+                if player_kart2.moving() {
+                    level.display_level(
+                        &mut pixel_buffer[sz..],
+                        WIDTH,
+                        HEIGHT / 2,
+                        &cam2,
+                        &track_textures,
+                    );
+                }
+                texture
+                    .update(None, &pixel_buffer[sz..], WIDTH * 4)
+                    .map_err(|e| e.to_string())?;
+                let texture_rect = Rect::from_center(
+                    Point::new(
+                        canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
+                        canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4 * 3,
+                    ),
+                    canvas_texture_rect.width(),
+                    canvas_texture_rect.height() / 2,
+                );
+                canvas
+                    .copy(&texture, None, texture_rect)
+                    .map_err(|e| e.to_string())?;
+
+                player_kart2.sprite.camera_kart = player_kart2.knock_out <= 0.0;
+                {
+                    let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
+                    sprites_to_draw.push(&mut player_kart1.sprite);
+                    sprites_to_draw.push(&mut player_kart2.sprite);
+                    sprites_to_draw.push(&mut checkpoint2);
+
+                    for powerup in &mut powerups {
+                        sprites_to_draw.push(&mut powerup.sprite);
+                    }
+
+                    for enemy in &mut enemies {
+                        sprites_to_draw.push(&mut enemy.sprite);
+                    }
+
+                    for fireball in &mut fireballs {
+                        sprites_to_draw.push(&mut fireball.sprite);
+                    }
+
+                    for banana in &mut bananas {
+                        sprites_to_draw.push(banana);
+                    }
+
+                    display::display_sprites(
+                        &mut canvas,
+                        &cam2,
+                        &mut sprites_to_draw,
+                        &canvas_dimensions_half,
+                        origin_y + texture_rect.height() as i32 - canvas_dimensions_half.1 as i32,
+                        &(0, canvas_dimensions_half.1 as i32),
+                        WIDTH,
+                        HEIGHT / 2,
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                player_kart2.sprite.camera_kart = false;
+
+                display::display_player_info(
+                    &mut canvas,
+                    &texture_creator,
+                    &font,
+                    &player_kart1,
+                    0,
+                    0,
+                )
+                .map_err(|e| e.to_string())?;
+
+                display::display_powerup_icons(
+                    &mut canvas,
+                    &powerup_icons,
+                    48,
+                    &player_kart1,
+                    (canvas_dimensions.0 / 2) as i32,
+                    16,
+                )
+                .map_err(|e| e.to_string())?;
+
+                display::display_player_info(
+                    &mut canvas,
+                    &texture_creator,
+                    &font,
+                    &player_kart2,
+                    0,
+                    canvas_dimensions_half.1 as i32,
+                )
+                .map_err(|e| e.to_string())?;
+
+                display::display_powerup_icons(
+                    &mut canvas,
+                    &powerup_icons,
+                    48,
+                    &player_kart2,
+                    (canvas_dimensions.0 / 2) as i32,
+                    canvas_dimensions_half.1 as i32 + 16,
+                )
+                .map_err(|e| e.to_string())?;
+
+                display::display_start_timer(
+                    &mut canvas,
+                    &texture_creator,
+                    &canvas_dimensions,
+                    &font,
+                    start_timer,
+                )
+                .map_err(|e| e.to_string())?;
+
+                //Victory at 4 laps
+                display::display_victory_twoplayer(
+                    &mut canvas,
+                    &player_kart1,
+                    &player_kart2,
+                    &texture_creator,
+                    &canvas_dimensions,
+                    &font,
+                )
+                .map_err(|e| e.to_string())?;
+
+                if paused {
+                    canvas.set_draw_color(Color::RGBA(128, 128, 128, 200));
+                    canvas
+                        .fill_rect(Rect::new(0, 0, canvas_dimensions.0, canvas_dimensions.1))
+                        .map_err(|e| e.to_string())?;
+
+                    display::display_text_center(
+                        &mut canvas,
+                        &texture_creator,
+                        canvas_dimensions.0 as i32 / 2,
+                        canvas_dimensions.1 as i32 / 4 - 64,
+                        &font,
+                        String::from("PAUSED"),
+                        Color::WHITE,
+                        64,
+                    )
+                    .map_err(|e| e.to_string())?;
+
+                    goto_menu
+                        .display(
+                            &mut canvas,
+                            &canvas_dimensions,
+                            &texture_creator,
+                            &events,
+                            &font,
+                        )
+                        .map_err(|e| e.to_string())?;
+                    goto_game
+                        .display(
+                            &mut canvas,
+                            &canvas_dimensions,
+                            &texture_creator,
+                            &events,
+                            &font,
+                        )
+                        .map_err(|e| e.to_string())?;
+
+                    if goto_game.clicked(&mut events, &canvas_dimensions) {
+                        paused = false;
+                    } else if goto_menu.clicked(&mut events, &canvas_dimensions) {
+                        player_kart1 = sprite::kart::Kart::new(
+                            9.0,
+                            35.5,
+                            sprite::SpriteType::Kart1,
+                            &sprite_assets,
+                        );
+                        player_kart1.sprite.rotation = 3.14159 / 2.0;
+                        cam1.follow(&player_kart1.sprite, 1.1);
+                        paused = false;
+                        screen = GameScreen::MainMenu;
+                    }
+                }
+
+                if events.key_is_pressed_once(sdl2::keyboard::Keycode::Escape) {
+                    paused = !paused;
+                }
+
+                if !paused {
+                    twoplayer::update_enemies(
+                        &mut enemies,
+                        &mut player_kart1,
+                        &mut player_kart2,
+                        sec_per_frame,
+                    );
+
+                    //Check for player collision with bananas
+                    twoplayer::update_bananas(&mut bananas, &mut player_kart1, &mut player_kart2);
+
+                    //Update the fireballs
+                    twoplayer::update_fireballs(
+                        &mut fireballs,
+                        &mut player_kart1,
+                        &mut player_kart2,
+                        sec_per_frame,
+                    );
+
+                    if start_timer <= 0.0 && player_kart1.laps < 4 && player_kart2.laps < 4 {
+                        //Use powerups
+                        twoplayer::use_powerups(
+                            &mut player_kart1,
+                            &mut player_kart2,
+                            &mut events,
+                            &mut bananas,
+                            &mut fireballs,
+                            &sprite_assets,
+                        )
+                    }
+
+                    //Move the karts
+                    twoplayer::update_karts(
+                        &mut player_kart1,
+                        &mut player_kart2,
+                        &mut checkpoint1,
+                        &mut checkpoint2,
+                        &mut cam1,
+                        &mut cam2,
+                        &events,
+                        &level,
+                        sec_per_frame,
+                        start_timer,
+                    );
+
+                    twoplayer::update_powerups(
+                        &mut powerups,
+                        &mut player_kart1,
+                        &mut player_kart2,
+                        sec_per_frame,
+                    );
+
+                    if start_timer > -1.0 {
+                        start_timer -= sec_per_frame;
+                    }
+                }
+            }
         }
-
-        texture
-            .update(None, &pixel_buffer[0..sz], WIDTH * 4)
-            .map_err(|e| e.to_string())?;
-        let texture_rect = Rect::from_center(
-            Point::new(
-                canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
-                canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4,
-            ),
-            canvas_texture_rect.width(),
-            canvas_texture_rect.height() / 2,
-        );
-        canvas
-            .copy(&texture, None, texture_rect)
-            .map_err(|e| e.to_string())?;
-
-        player_kart1.sprite.camera_kart = player_kart1.knock_out <= 0.0;
-        {
-            let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
-            sprites_to_draw.push(&mut player_kart1.sprite);
-            sprites_to_draw.push(&mut player_kart2.sprite);
-            sprites_to_draw.push(&mut checkpoint1);
-
-            for powerup in &mut powerups {
-                sprites_to_draw.push(&mut powerup.sprite);
-            }
-
-            for enemy in &mut enemies {
-                sprites_to_draw.push(&mut enemy.sprite);
-            }
-
-            for fireball in &mut fireballs {
-                sprites_to_draw.push(&mut fireball.sprite);
-            }
-
-            for banana in &mut bananas {
-                sprites_to_draw.push(banana);
-            }
-
-            display::display_sprites(
-                &mut canvas,
-                &cam1,
-                &mut sprites_to_draw,
-                &canvas_dimensions_half,
-                texture_rect.y() / 2,
-                &(0, 0),
-                WIDTH,
-                HEIGHT / 2,
-            )
-            .map_err(|e| e.to_string())?;
-        }
-        player_kart1.sprite.camera_kart = false;
-
-        let origin_y = texture_rect.y() / 2;
-
-        if player_kart2.moving() {
-            level.display_level(
-                &mut pixel_buffer[sz..],
-                WIDTH,
-                HEIGHT / 2,
-                &cam2,
-                &track_textures,
-            );
-        }
-        texture
-            .update(None, &pixel_buffer[sz..], WIDTH * 4)
-            .map_err(|e| e.to_string())?;
-        let texture_rect = Rect::from_center(
-            Point::new(
-                canvas_texture_rect.x() + canvas_texture_rect.width() as i32 / 2,
-                canvas_texture_rect.y() + canvas_texture_rect.height() as i32 / 4 * 3,
-            ),
-            canvas_texture_rect.width(),
-            canvas_texture_rect.height() / 2,
-        );
-        canvas
-            .copy(&texture, None, texture_rect)
-            .map_err(|e| e.to_string())?;
-
-        player_kart2.sprite.camera_kart = player_kart2.knock_out <= 0.0;
-        {
-            let mut sprites_to_draw: Vec<&mut sprite::Sprite> = vec![];
-            sprites_to_draw.push(&mut player_kart1.sprite);
-            sprites_to_draw.push(&mut player_kart2.sprite);
-            sprites_to_draw.push(&mut checkpoint2);
-
-            for powerup in &mut powerups {
-                sprites_to_draw.push(&mut powerup.sprite);
-            }
-
-            for enemy in &mut enemies {
-                sprites_to_draw.push(&mut enemy.sprite);
-            }
-
-            for fireball in &mut fireballs {
-                sprites_to_draw.push(&mut fireball.sprite);
-            }
-
-            for banana in &mut bananas {
-                sprites_to_draw.push(banana);
-            }
-
-            display::display_sprites(
-                &mut canvas,
-                &cam2,
-                &mut sprites_to_draw,
-                &canvas_dimensions_half,
-                origin_y + texture_rect.height() as i32 - canvas_dimensions_half.1 as i32,
-                &(0, canvas_dimensions_half.1 as i32),
-                WIDTH,
-                HEIGHT / 2,
-            )
-            .map_err(|e| e.to_string())?;
-        }
-        player_kart2.sprite.camera_kart = false;
-
-        display::display_player_info(
-            &mut canvas,
-            &texture_creator,
-            &font,
-            &player_kart1.sprite,
-            kart1_laps,
-            0,
-            0,
-        )
-        .map_err(|e| e.to_string())?;
-
-        display::display_powerup_icons(
-            &mut canvas,
-            &powerup_icons,
-            48,
-            &player_kart1,
-            (canvas_dimensions.0 / 2) as i32,
-            16,
-        )
-        .map_err(|e| e.to_string())?;
-
-        display::display_player_info(
-            &mut canvas,
-            &texture_creator,
-            &font,
-            &player_kart2.sprite,
-            kart2_laps,
-            0,
-            canvas_dimensions_half.1 as i32,
-        )
-        .map_err(|e| e.to_string())?;
-
-        display::display_powerup_icons(
-            &mut canvas,
-            &powerup_icons,
-            48,
-            &player_kart2,
-            (canvas_dimensions.0 / 2) as i32,
-            canvas_dimensions_half.1 as i32 + 16,
-        )
-        .map_err(|e| e.to_string())?;
 
         display::display_text_right_justify(
             &mut canvas,
@@ -415,263 +830,6 @@ fn main() -> Result<(), String> {
         )
         .map_err(|e| e.to_string())?;
 
-        if start_timer.ceil() > 0.0 {
-            display::display_text_center(
-                &mut canvas,
-                &texture_creator,
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2 - 64,
-                &font,
-                format!("{}", start_timer.ceil()),
-                Color::WHITE,
-                64,
-            )
-            .map_err(|e| e.to_string())?;
-        } else if start_timer.ceil() == 0.0 {
-            display::display_text_center(
-                &mut canvas,
-                &texture_creator,
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2 - 64,
-                &font,
-                String::from("GO!"),
-                Color::WHITE,
-                64,
-            )
-            .map_err(|e| e.to_string())?;
-        }
-
-        //Victory at 4 laps
-        if kart1_laps == 4 {
-            display::display_text_center(
-                &mut canvas,
-                &texture_creator,
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2 - 32,
-                &font,
-                String::from("PLAYER 1 WINS!"),
-                Color::RED,
-                32,
-            )
-            .map_err(|e| e.to_string())?;
-            player_kart1.sprite.speed = 0.0;
-            player_kart1.sprite.rotation_speed = 0.0;
-            player_kart2.sprite.speed = 0.0;
-            player_kart2.sprite.rotation_speed = 0.0;
-        } else if kart2_laps == 4 {
-            display::display_text_center(
-                &mut canvas,
-                &texture_creator,
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2 - 32,
-                &font,
-                String::from("PLAYER 2 WINS!"),
-                Color::BLUE,
-                32,
-            )
-            .map_err(|e| e.to_string())?;
-            player_kart1.sprite.speed = 0.0;
-            player_kart1.sprite.rotation_speed = 0.0;
-            player_kart2.sprite.speed = 0.0;
-            player_kart2.sprite.rotation_speed = 0.0;
-        }
-
-        //Check for player collision with bananas
-        let mut index = 0;
-        while index < bananas.len() {
-            let banana = &bananas[index];
-            index += 1;
-
-            if sprite::dist_between(banana, &player_kart1.sprite) < 0.1 {
-                player_kart1.knock_out = 3.0;
-                bananas.remove(index - 1);
-                index -= 1;
-                continue;
-            }
-
-            if sprite::dist_between(banana, &player_kart2.sprite) < 0.1 {
-                player_kart2.knock_out = 3.0;
-                bananas.remove(index - 1);
-                index -= 1;
-                continue;
-            }
-        }
-
-        //Update the fireballs
-        let mut index = 0;
-        while index < fireballs.len() {
-            let fireball = &mut fireballs[index];
-            match fireball.target {
-                sprite::SpriteType::Kart1 => {
-                    fireball.update(sec_per_frame, &player_kart1.sprite);
-                }
-                sprite::SpriteType::Kart2 => {
-                    fireball.update(sec_per_frame, &player_kart2.sprite);
-                }
-                _ => {}
-            }
-            index += 1;
-
-            if sprite::dist_between(&fireball.sprite, &player_kart1.sprite) < 0.1 {
-                player_kart1.knock_out = 2.0;
-                fireballs.remove(index - 1);
-                index -= 1;
-                continue;
-            }
-
-            if sprite::dist_between(&fireball.sprite, &player_kart2.sprite) < 0.1 {
-                player_kart2.knock_out = 2.0;
-                fireballs.remove(index - 1);
-                index -= 1;
-                continue;
-            }
-
-            if fireball.timer > 8.0 {
-                fireballs.remove(index - 1);
-                index -= 1;
-                continue;
-            }
-        }
-
-        //Move the karts
-        if start_timer <= 0.0 && kart1_laps < 4 && kart2_laps < 4 {
-            player_kart1.drive_kart(&events, Keycode::Up, Keycode::Left, Keycode::Right);
-            player_kart2.drive_kart(&events, Keycode::W, Keycode::A, Keycode::D);
-            player_kart1.move_kart(sec_per_frame);
-            player_kart2.move_kart(sec_per_frame);
-
-            //Use powerups
-            if events.key_is_pressed_once(Keycode::Down) {
-                let powerup = player_kart1.use_powerup();
-                match powerup {
-                    sprite::kart::PowerupType::SpeedBoost => {
-                        player_kart1.sprite.speed += 1.0;
-                    }
-                    sprite::kart::PowerupType::Banana => {
-                        let mut banana = sprite::Sprite::new(
-                            player_kart1.sprite.trans_x - 0.3 * player_kart1.sprite.rotation.sin(),
-                            player_kart1.sprite.trans_z - 0.3 * player_kart1.sprite.rotation.cos(),
-                            sprite::SpriteType::Banana,
-                            &sprite_assets,
-                        );
-                        banana.width = 0.06;
-                        banana.height = 0.06;
-                        bananas.push(banana);
-                    }
-                    sprite::kart::PowerupType::Fireball => {
-                        let (xdiff, ydiff) =
-                            sprite::xz_diff_norm(&player_kart2.sprite, &player_kart1.sprite);
-                        fireballs.push(sprite::enemy::Fireball::new(
-                            player_kart1.sprite.trans_x + 0.3 * xdiff,
-                            player_kart1.sprite.trans_z + 0.3 * ydiff,
-                            &sprite_assets,
-                            sprite::SpriteType::Kart2,
-                        ));
-                    }
-                    _ => {}
-                }
-            }
-            if events.key_is_pressed_once(Keycode::S) {
-                let powerup = player_kart2.use_powerup();
-                match powerup {
-                    sprite::kart::PowerupType::SpeedBoost => {
-                        player_kart2.sprite.speed += 1.0;
-                    }
-                    sprite::kart::PowerupType::Banana => {
-                        let mut banana = sprite::Sprite::new(
-                            player_kart2.sprite.trans_x - 0.3 * player_kart2.sprite.rotation.sin(),
-                            player_kart2.sprite.trans_z - 0.3 * player_kart2.sprite.rotation.cos(),
-                            sprite::SpriteType::Banana,
-                            &sprite_assets,
-                        );
-                        banana.width = 0.06;
-                        banana.height = 0.06;
-                        bananas.push(banana);
-                    }
-                    sprite::kart::PowerupType::Fireball => {
-                        let (xdiff, ydiff) =
-                            sprite::xz_diff_norm(&player_kart1.sprite, &player_kart2.sprite);
-                        fireballs.push(sprite::enemy::Fireball::new(
-                            player_kart2.sprite.trans_x + 0.3 * xdiff,
-                            player_kart2.sprite.trans_z + 0.3 * ydiff,
-                            &sprite_assets,
-                            sprite::SpriteType::Kart1,
-                        ));
-                    }
-                    _ => {}
-                }
-            }
-        }
-
-        if level.kart_at_checkpoint(&player_kart1, current_checkpoint_kart1, 1.5) {
-            if current_checkpoint_kart1 == level.checkpoints.len() - 1 {
-                kart1_laps += 1;
-            }
-
-            current_checkpoint_kart1 += 1;
-            current_checkpoint_kart1 %= level.checkpoints.len();
-            checkpoint1.trans_x = level.checkpoints[current_checkpoint_kart1].0;
-            checkpoint1.trans_z = level.checkpoints[current_checkpoint_kart1].1;
-        }
-
-        if level.kart_at_checkpoint(&player_kart2, current_checkpoint_kart2, 1.5) {
-            if current_checkpoint_kart2 == level.checkpoints.len() - 1 {
-                kart2_laps += 1;
-            }
-
-            current_checkpoint_kart2 += 1;
-            current_checkpoint_kart2 %= level.checkpoints.len();
-            checkpoint2.trans_x = level.checkpoints[current_checkpoint_kart2].0;
-            checkpoint2.trans_z = level.checkpoints[current_checkpoint_kart2].1;
-        }
-
-        player_kart1.apply_friction(&level);
-        player_kart2.apply_friction(&level);
-
-        if player_kart1.knock_out <= 0.0 {
-            cam1.follow(&player_kart1.sprite, 1.1);
-        }
-        if player_kart2.knock_out <= 0.0 {
-            cam2.follow(&player_kart2.sprite, 1.1);
-        }
-
-        for enemy in &mut enemies {
-            if sprite::dist_between(&enemy.sprite, &player_kart1.sprite) < 0.2
-                && player_kart1.knock_out <= 0.0
-            {
-                player_kart1.knock_out = 1.0;
-            }
-            if sprite::dist_between(&enemy.sprite, &player_kart2.sprite) < 0.2
-                && player_kart2.knock_out <= 0.0
-            {
-                player_kart2.knock_out = 1.0;
-            }
-
-            enemy.update(sec_per_frame);
-        }
-
-        for powerup in &mut powerups {
-            if sprite::dist_between(&powerup.sprite, &player_kart1.sprite) < 0.2
-                && powerup.sprite.width >= powerup.size
-                && player_kart1.powerup_amt == 0
-            {
-                powerup.sprite.width = 0.0;
-                powerup.sprite.height = 0.0;
-                player_kart1.pickup_powerup();
-            }
-            if sprite::dist_between(&powerup.sprite, &player_kart2.sprite) < 0.2
-                && powerup.sprite.width >= powerup.size
-                && powerup.sprite.width >= powerup.size
-                && player_kart2.powerup_amt == 0
-            {
-                powerup.sprite.width = 0.0;
-                powerup.sprite.height = 0.0;
-                player_kart2.pickup_powerup();
-            }
-
-            powerup.update(sec_per_frame);
-        }
-
         events.update();
         canvas.present();
 
@@ -682,10 +840,6 @@ fn main() -> Result<(), String> {
             fps = frames as f64 - 1.0;
             fps_update_timer = 0.0;
             frames = 0;
-        }
-
-        if start_timer > -1.0 {
-            start_timer -= sec_per_frame;
         }
 
         sec_per_frame = start_frame.elapsed().as_secs_f64();

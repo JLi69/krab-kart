@@ -57,7 +57,6 @@ pub fn display_sprites(
 
     Ok(())
 }
-
 pub fn display_text_left_justify(
     canvas: &mut Canvas<Window>,
     texture_creator: &TextureCreator<WindowContext>,
@@ -180,8 +179,7 @@ pub fn display_player_info(
     canvas: &mut Canvas<Window>,
     texture_creator: &TextureCreator<WindowContext>,
     font: &Font,
-    kart: &Sprite,
-    laps: u32,
+    kart: &Kart,
     x: i32,
     y: i32,
 ) -> Result<(), String> {
@@ -192,7 +190,10 @@ pub fn display_player_info(
         x + 16,
         y + 16,
         &font,
-        format!("speed: {}", ((kart.speed * 100.0 * 20.0).round() / 100.0)),
+        format!(
+            "speed: {}",
+            ((kart.sprite.speed * 100.0 * 20.0).round() / 100.0)
+        ),
         Color::WHITE,
         16,
     )
@@ -204,7 +205,7 @@ pub fn display_player_info(
         x + 16,
         y + 40,
         &font,
-        format!("laps: {}", laps),
+        format!("laps: {}", kart.laps),
         Color::WHITE,
         16,
     )
@@ -218,8 +219,8 @@ pub fn display_player_info(
         &font,
         format!(
             "pos: {}, {}",
-            ((kart.trans_x * 100.0).round() / 100.0),
-            ((kart.trans_z * 100.0).round() / 100.0)
+            ((kart.sprite.trans_x * 100.0).round() / 100.0),
+            ((kart.sprite.trans_z * 100.0).round() / 100.0)
         ),
         Color::WHITE,
         8,
@@ -256,6 +257,80 @@ pub fn display_powerup_icons(
             }
             _ => {}
         }
+    }
+
+    Ok(())
+}
+
+pub fn display_start_timer(
+    canvas: &mut Canvas<Window>,
+    texture_creator: &TextureCreator<WindowContext>,
+    canvas_dimensions: &(u32, u32),
+    font: &Font,
+    start_timer: f64,
+) -> Result<(), String> {
+    if start_timer.ceil() > 0.0 {
+        display_text_center(
+            canvas,
+            &texture_creator,
+            canvas_dimensions.0 as i32 / 2,
+            canvas_dimensions.1 as i32 / 2 - 64,
+            &font,
+            format!("{}", start_timer.ceil()),
+            Color::WHITE,
+            64,
+        )
+        .map_err(|e| e.to_string())?;
+    } else if start_timer.ceil() == 0.0 {
+        display_text_center(
+            canvas,
+            &texture_creator,
+            canvas_dimensions.0 as i32 / 2,
+            canvas_dimensions.1 as i32 / 2 - 64,
+            &font,
+            String::from("GO!"),
+            Color::WHITE,
+            64,
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+pub fn display_victory_twoplayer(
+    canvas: &mut Canvas<Window>,
+    player_kart1: &Kart,
+    player_kart2: &Kart,
+    texture_creator: &TextureCreator<WindowContext>,
+    canvas_dimensions: &(u32, u32),
+    font: &Font,
+) -> Result<(), String> {
+    //Victory at 4 laps
+    if player_kart1.laps == 4 {
+        display_text_center(
+            canvas,
+            &texture_creator,
+            canvas_dimensions.0 as i32 / 2,
+            canvas_dimensions.1 as i32 / 2 - 32,
+            &font,
+            String::from("PLAYER 1 WINS!"),
+            Color::RED,
+            32,
+        )
+        .map_err(|e| e.to_string())?;
+    } else if player_kart2.laps == 4 {
+        display_text_center(
+            canvas,
+            &texture_creator,
+            canvas_dimensions.0 as i32 / 2,
+            canvas_dimensions.1 as i32 / 2 - 32,
+            &font,
+            String::from("PLAYER 2 WINS!"),
+            Color::BLUE,
+            32,
+        )
+        .map_err(|e| e.to_string())?;
     }
 
     Ok(())
