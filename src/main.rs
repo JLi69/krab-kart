@@ -378,7 +378,7 @@ fn main() -> Result<(), String> {
                 }
 
                 //Display timer
-                if timer - 60.0 * (timer / 60.0).floor() < 10.0 {
+                if (timer - 60.0 * (timer / 60.0).floor()).round() < 10.0 {
                     display::display_text_center(
                         &mut canvas,
                         &texture_creator,
