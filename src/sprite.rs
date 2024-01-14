@@ -141,7 +141,7 @@ impl Sprite {
             let x_offset = -(canvas_dimensions.1 as i32 * pixel_buff_width as i32
                 / pixel_buff_height as i32)
                 / 2
-                + canvas_dimensions.0 as i32 / 2 as i32;
+                + canvas_dimensions.0 as i32 / 2_i32;
 
             sprite_rect = Rect::new(
                 ((canvas_dimensions.1 as f64 * pixel_buff_width as f64 / pixel_buff_height as f64)
@@ -166,7 +166,7 @@ impl Sprite {
             let y_offset = -(canvas_dimensions.0 as i32 * pixel_buff_height as i32
                 / pixel_buff_width as i32)
                 / 2
-                + canvas_dimensions.1 as i32 / 2 as i32;
+                + canvas_dimensions.1 as i32 / 2_i32;
 
             sprite_rect = Rect::new(
                 (canvas_dimensions.0 as f64 * (spr_screen_x) / (pixel_buff_width as f64)
@@ -178,8 +178,8 @@ impl Sprite {
                     - sprite_h * (canvas_dimensions.0 as f64)) as i32
                     + y_offset
                     + canvas_origin.1,
-                (sprite_w as f64 * canvas_dimensions.0 as f64) as u32,
-                (sprite_h as f64 * canvas_dimensions.0 as f64) as u32,
+                (sprite_w * canvas_dimensions.0 as f64) as u32,
+                (sprite_h * canvas_dimensions.0 as f64) as u32,
             );
         }
 
@@ -236,7 +236,7 @@ impl Sprite {
         while trans_angle >= 3.14159 * 2.0 {
             trans_angle -= 3.14159 * 2.0;
         }
-        return (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32;
+        (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32
     }
 
     //Returns distance to camera squared

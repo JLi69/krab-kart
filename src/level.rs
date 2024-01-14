@@ -103,7 +103,7 @@ impl Level {
     //Loads the level from a file (a png image)
     //Does not account for sprites
     pub fn load_from_png(path: &str) -> Result<Level, String> {
-        let level_file = File::open(&path);
+        let level_file = File::open(path);
 
         match level_file {
             Ok(file) => {

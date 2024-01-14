@@ -30,7 +30,7 @@ pub fn display_sprites(
                 pix_buff_h,
                 canvas_dimensions,
                 canvas_origin,
-                &sprite_assets,
+                sprite_assets,
             )
             .map_err(|e| e.to_string())?;
         }
@@ -44,7 +44,7 @@ pub fn display_sprites(
                 pix_buff_h,
                 canvas_dimensions,
                 &(canvas_origin.0, canvas_origin.1 + offset_y),
-                &sprite_assets,
+                sprite_assets,
             )
             .map_err(|e| e.to_string())?;
         }
@@ -182,10 +182,10 @@ pub fn display_player_info(
     //Display speed
     display_text_left_justify(
         canvas,
-        &texture_creator,
+        texture_creator,
         x + 16,
         y + 16,
-        &font,
+        font,
         format!(
             "speed: {}",
             ((kart.sprite.speed * 100.0 * 20.0).round() / 100.0)
@@ -197,10 +197,10 @@ pub fn display_player_info(
 
     display_text_left_justify(
         canvas,
-        &texture_creator,
+        texture_creator,
         x + 16,
         y + 40,
-        &font,
+        font,
         format!("laps: {}", kart.laps),
         Color::WHITE,
         16,
@@ -209,10 +209,10 @@ pub fn display_player_info(
 
     display_text_left_justify(
         canvas,
-        &texture_creator,
+        texture_creator,
         x + 16,
         y + 80,
-        &font,
+        font,
         format!(
             "pos: {}, {}",
             ((kart.sprite.trans_x * 100.0).round() / 100.0),
@@ -268,10 +268,10 @@ pub fn display_start_timer(
     if start_timer.ceil() > 0.0 {
         display_text_center(
             canvas,
-            &texture_creator,
+            texture_creator,
             canvas_dimensions.0 as i32 / 2,
             canvas_dimensions.1 as i32 / 2 - 64,
-            &font,
+            font,
             format!("{}", start_timer.ceil()),
             Color::WHITE,
             64,
@@ -280,10 +280,10 @@ pub fn display_start_timer(
     } else if start_timer.ceil() == 0.0 {
         display_text_center(
             canvas,
-            &texture_creator,
+            texture_creator,
             canvas_dimensions.0 as i32 / 2,
             canvas_dimensions.1 as i32 / 2 - 64,
-            &font,
+            font,
             String::from("GO!"),
             Color::WHITE,
             64,

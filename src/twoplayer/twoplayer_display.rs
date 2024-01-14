@@ -44,7 +44,7 @@ impl TwoplayerState {
                 WIDTH,
                 HEIGHT / 2,
                 &self.cam1,
-                &track_textures,
+                track_textures,
             );
         }
 
@@ -54,7 +54,7 @@ impl TwoplayerState {
                 WIDTH,
                 HEIGHT / 2,
                 &self.cam2,
-                &track_textures,
+                track_textures,
             );
         }
     }
@@ -82,7 +82,7 @@ impl TwoplayerState {
             canvas_texture_rect.height() / 2,
         );
         canvas
-            .copy(&background_texture, None, texture_rect)
+            .copy(background_texture, None, texture_rect)
             .map_err(|e| e.to_string())?;
 
         Ok(())
@@ -178,7 +178,7 @@ impl TwoplayerState {
         sprites_to_draw.sort_by(|sprite1, sprite2| {
             sprite2
                 .dist2_to_camera(cam)
-                .partial_cmp(&sprite1.dist2_to_camera(&cam))
+                .partial_cmp(&sprite1.dist2_to_camera(cam))
                 .unwrap()
         });
 

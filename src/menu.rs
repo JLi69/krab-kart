@@ -43,10 +43,10 @@ impl Button {
         if self.mouse_hovering(events, &canvas_dimensions) {
             display::display_text_center(
                 canvas,
-                &texture_creator,
+                texture_creator,
                 (canvas_dimensions.0 / 2) as i32 + self.x,
                 (canvas_dimensions.1 / 2) as i32 + self.y - 24,
-                &font,
+                font,
                 self.text.clone(),
                 Color::RGB(255, 128, 0),
                 24,
@@ -54,10 +54,10 @@ impl Button {
         } else {
             display::display_text_center(
                 canvas,
-                &texture_creator,
+                texture_creator,
                 (canvas_dimensions.0 / 2) as i32 + self.x,
                 (canvas_dimensions.1 / 2) as i32 + self.y - 24,
-                &font,
+                font,
                 self.text.clone(),
                 Color::WHITE,
                 24,
@@ -100,10 +100,10 @@ impl Text {
         let canvas_dimensions = canvas.output_size()?;
         display::display_text_center(
             canvas,
-            &texture_creator,
+            texture_creator,
             (canvas_dimensions.0 / 2) as i32 + self.x,
             (canvas_dimensions.1 / 2) as i32 + self.y - self.font_sz as i32,
-            &font,
+            font,
             self.text.clone(),
             self.color,
             self.font_sz,

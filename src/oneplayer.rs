@@ -63,7 +63,7 @@ impl SingeplayerState {
             self.checkpoint.trans_z = level.checkpoints[self.player_kart.current_checkpoint].1;
         }
 
-        self.player_kart.apply_friction(&level);
+        self.player_kart.apply_friction(level);
 
         if self.player_kart.knock_out <= 0.0 {
             self.cam

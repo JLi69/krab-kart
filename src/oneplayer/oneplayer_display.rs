@@ -74,7 +74,7 @@ impl SingeplayerState {
         );
 
         canvas
-            .copy(&background_texture, None, texture_rect)
+            .copy(background_texture, None, texture_rect)
             .map_err(|e| e.to_string())?;
 
         Ok(())

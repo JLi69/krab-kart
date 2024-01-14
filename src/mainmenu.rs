@@ -54,12 +54,12 @@ impl MainMenuScreen {
         events: &mut Events,
         canvas_dimensions: &(u32, u32),
     ) -> Option<GameScreen> {
-        if self.quit_button.clicked(events, &canvas_dimensions) {
+        if self.quit_button.clicked(events, canvas_dimensions) {
             events.can_quit = true;
             return None;
-        } else if self.oneplayer_button.clicked(events, &canvas_dimensions) {
+        } else if self.oneplayer_button.clicked(events, canvas_dimensions) {
             return Some(GameScreen::OnePlayer);
-        } else if self.twoplayer_button.clicked(events, &canvas_dimensions) {
+        } else if self.twoplayer_button.clicked(events, canvas_dimensions) {
             return Some(GameScreen::TwoPlayer);
         }
 
@@ -79,7 +79,7 @@ impl MainMenuScreen {
             WIDTH,
             HEIGHT / 2,
             &self.camera,
-            &track_textures,
+            track_textures,
         );
 
         texture
@@ -112,7 +112,7 @@ impl MainMenuScreen {
             canvas_texture_rect.height() / 2,
         );
         canvas
-            .copy(&background_texture, None, texture_rect)
+            .copy(background_texture, None, texture_rect)
             .map_err(|e| e.to_string())?;
 
         //Display buttons

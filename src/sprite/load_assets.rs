@@ -13,7 +13,7 @@ pub fn load_texture<'a>(
     path: &str,
     texture_creator: &'a TextureCreator<WindowContext>,
 ) -> Result<Texture<'a>, String> {
-    let img_file = File::open(&path);
+    let img_file = File::open(path);
 
     match img_file {
         Ok(file) => {
@@ -35,7 +35,7 @@ pub fn load_texture<'a>(
 
             //Write pixels into texture
             tex.with_lock(None, |pixels: &mut [u8], _pitch: usize| {
-                for i in 0..(reader.output_buffer_size() as usize) {
+                for i in 0..reader.output_buffer_size() {
                     if i % 4 == 0 {
                         pixels[i] = png_buffer[i + 2];
                         pixels[i + 1] = png_buffer[i + 1];

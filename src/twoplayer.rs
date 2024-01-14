@@ -17,7 +17,7 @@ const START_TIMER: f64 = 3.0;
 const LAPS_TO_WIN: u32 = 4;
 
 fn knockout_kart(kart: &mut Kart, spr: &Sprite, dist: f64, time: f64) -> bool {
-    if dist_between(&spr, &kart.sprite) < dist {
+    if dist_between(spr, &kart.sprite) < dist {
         if kart.knock_out <= 0.0 {
             kart.knock_out = time;
         }

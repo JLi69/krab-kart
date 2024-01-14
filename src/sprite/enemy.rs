@@ -27,9 +27,7 @@ impl Enemy {
         let dist = (diffx * diffx + diffz * diffz).sqrt();
 
         if dist < 0.1 {
-            let tmp = self.end;
-            self.end = self.start;
-            self.start = tmp;
+            std::mem::swap(&mut self.end, &mut self.start);
             return;
         }
 

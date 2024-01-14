@@ -9,7 +9,7 @@ pub struct BitMap {
 impl BitMap {
     //path: png image path
     pub fn from_png(path: &str) -> Result<BitMap, String> {
-        let png_file = File::open(&path);
+        let png_file = File::open(path);
 
         match png_file {
             Ok(file) => {
@@ -38,7 +38,7 @@ impl BitMap {
     //x and y are in the range 0 to 1
     pub fn sample(&self, x: f64, y: f64, pixel_data: &mut [u8]) {
         //Out of range, return black
-        if x < 0.0 || x > 1.0 || y < 0.0 || y > 1.0 {
+        if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
             pixel_data[0] = 0;
             pixel_data[1] = 0;
             pixel_data[2] = 0;
