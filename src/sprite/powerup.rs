@@ -1,15 +1,13 @@
 use crate::sprite::{Sprite, SpriteType};
-use sdl2::render::Texture;
-use std::collections::HashMap;
 
-pub struct Powerup<'a> {
-    pub sprite: Sprite<'a>,
+pub struct Powerup {
+    pub sprite: Sprite,
     pub size: f64,
 }
 
-impl<'a> Powerup<'a> {
-    pub fn new(x: f64, z: f64, sprite_assets: &'a HashMap<SpriteType, Texture<'a>>) -> Powerup {
-        let spr = Sprite::new(x, z, SpriteType::Powerup, sprite_assets);
+impl Powerup {
+    pub fn new(x: f64, z: f64) -> Powerup {
+        let spr = Sprite::new(x, z, SpriteType::Powerup);
 
         Powerup {
             size: spr.width,
@@ -33,5 +31,9 @@ impl<'a> Powerup<'a> {
         if self.sprite.height > self.size {
             self.sprite.height = self.size;
         }
+    }
+
+    pub fn can_pickup(&self) -> bool {
+        self.sprite.width >= self.size
     }
 }

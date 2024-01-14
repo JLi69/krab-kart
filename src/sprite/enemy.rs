@@ -1,29 +1,21 @@
 use crate::sprite::{Sprite, SpriteType};
-use sdl2::render::Texture;
-use std::collections::HashMap;
 
-pub struct Enemy<'a> {
-    pub sprite: Sprite<'a>,
+pub struct Enemy {
+    pub sprite: Sprite,
     start: (f64, f64),
     end: (f64, f64),
 }
 
-pub struct Fireball<'a> {
-    pub sprite: Sprite<'a>,
+pub struct Fireball {
+    pub sprite: Sprite,
     pub target: SpriteType,
     pub timer: f64,
 }
 
-impl<'a> Enemy<'a> {
-    pub fn new(
-        x: f64,
-        z: f64,
-        endx: f64,
-        endz: f64,
-        sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
-    ) -> Enemy {
+impl Enemy {
+    pub fn new(x: f64, z: f64, endx: f64, endz: f64) -> Enemy {
         Enemy {
-            sprite: Sprite::new(x, z, SpriteType::Enemy, sprite_assets),
+            sprite: Sprite::new(x, z, SpriteType::Enemy),
             start: (x, z),
             end: (endx, endz),
         }
@@ -48,15 +40,10 @@ impl<'a> Enemy<'a> {
     }
 }
 
-impl<'a> Fireball<'a> {
-    pub fn new(
-        x: f64,
-        z: f64,
-        sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
-        target_type: SpriteType,
-    ) -> Fireball<'a> {
+impl Fireball {
+    pub fn new(x: f64, z: f64, target_type: SpriteType) -> Fireball {
         Fireball {
-            sprite: Sprite::new(x, z, SpriteType::Fireball, sprite_assets),
+            sprite: Sprite::new(x, z, SpriteType::Fireball),
             timer: 0.0,
             target: target_type,
         }

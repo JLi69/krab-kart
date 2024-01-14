@@ -1,6 +1,82 @@
-use crate::sprite::{bitmap::BitMap, kart::Kart, Sprite};
+use crate::sprite::{bitmap::BitMap, enemy::Enemy, kart::Kart, powerup::Powerup, Sprite};
 use std::collections::HashMap;
 use std::fs::File;
+
+pub mod camera_consts {
+    pub const DEFAULT_CAM_FOLLOW_DIST: f64 = 1.1;
+    pub const DEFAULT_CAM_FOV: f64 = std::f64::consts::PI / 2.0;
+    pub const DEFAULT_CAM_NEAR: f64 = 0.01;
+    pub const DEFAULT_CAM_FAR: f64 = 1.0;
+}
+
+pub const CHECKPOINTS: [(f64, f64); 5] = [
+    (11.0, 35.3),
+    (34.0, 28.0),
+    (32.0, 7.0),
+    (13.0, 6.0),
+    (11.0, 35.3),
+];
+
+pub const ENEMY_LOCATIONS: [(f64, f64); 7] = [
+    (31.0, 18.0),
+    (22.0, 4.0),
+    (22.5, 7.0),
+    (23.0, 4.0),
+    (10.5, 17.0),
+    (7.5, 15.5),
+    (10.5, 16.0),
+];
+
+pub const ENEMY_GOAL_POS: [(f64, f64); 7] = [
+    (31.0, 16.0),
+    (22.0, 7.0),
+    (22.5, 4.0),
+    (23.0, 7.0),
+    (7.5, 16.0),
+    (10.5, 16.5),
+    (7.5, 15.0),
+];
+
+pub const POWERUP_LOCATIONS: [(f64, f64); 11] = [
+    (20.0, 35.2),
+    (20.0, 36.0),
+    (20.0, 34.4),
+    (29.5, 22.5),
+    (29.0, 22.0),
+    (28.5, 21.5),
+    (17.0, 5.0),
+    (16.5, 4.5),
+    (17.5, 4.5),
+    (16.5, 5.5),
+    (17.5, 5.5),
+];
+
+pub fn create_enemies() -> Vec<Enemy> {
+    let mut enemies = vec![];
+
+    for i in 0..ENEMY_LOCATIONS.len() {
+        let enemy = Enemy::new(
+            ENEMY_LOCATIONS[i].0,
+            ENEMY_LOCATIONS[i].1,
+            ENEMY_GOAL_POS[i].0,
+            ENEMY_GOAL_POS[i].1,
+        );
+        enemies.push(enemy);
+    }
+
+    enemies
+}
+
+pub fn create_powerups() -> Vec<Powerup> {
+    let mut powerups = vec![];
+
+    for location in POWERUP_LOCATIONS {
+        let powerup = Powerup::new(location.0, location.1);
+        powerups.push(powerup);
+    }
+
+    powerups
+}
 
 pub struct Camera {
     pub trans_x: f64,
@@ -41,7 +117,7 @@ impl Level {
                     level_data: buff,
                     level_width: info.width,
                     level_height: info.height,
-                    checkpoints: vec![],
+                    checkpoints: Vec::from(CHECKPOINTS),
                     level_scale: 32.0,
                 })
             }
@@ -185,7 +261,7 @@ impl Level {
 
 impl Camera {
     //Creates camera, cam_fov and cam_rot are in radians
-    pub fn new(x: f64, z: f64, cam_rot: f64, near: f64, far: f64, cam_fov: f64) -> Camera {
+    pub fn new(x: f64, z: f64, cam_rot: f64, near: f64, far: f64, cam_fov: f64) -> Self {
         let cam_x_near1 = (-cam_fov / 2.0).sin() * near;
         let cam_x_near2 = (cam_fov / 2.0).sin() * near;
         let cam_x_far1 = (-cam_fov / 2.0).sin() * far;
@@ -193,10 +269,34 @@ impl Camera {
         let cam_z_near = (cam_fov / 2.0).cos() * near;
         let cam_z_far = (cam_fov / 2.0).cos() * far;
 
-        Camera {
+        Self {
             trans_x: x,
             trans_z: z,
             rotation: cam_rot,
+            fov: cam_fov,
+
+            x_near1: cam_x_near1,
+            x_near2: cam_x_near2,
+            x_far1: cam_x_far1,
+            x_far2: cam_x_far2,
+            z_near: cam_z_near,
+            z_far: cam_z_far,
+        }
+    }
+
+    //Creates a camera following a sprite
+    pub fn create_following(spr: &Sprite, dist: f64, near: f64, far: f64, cam_fov: f64) -> Self {
+        let cam_x_near1 = (-cam_fov / 2.0).sin() * near;
+        let cam_x_near2 = (cam_fov / 2.0).sin() * near;
+        let cam_x_far1 = (-cam_fov / 2.0).sin() * far;
+        let cam_x_far2 = (cam_fov / 2.0).sin() * far;
+        let cam_z_near = (cam_fov / 2.0).cos() * near;
+        let cam_z_far = (cam_fov / 2.0).cos() * far;
+
+        Self {
+            trans_x: spr.trans_x - spr.rotation.sin() * dist,
+            trans_z: spr.trans_z - spr.rotation.cos() * dist,
+            rotation: spr.rotation,
             fov: cam_fov,
 
             x_near1: cam_x_near1,

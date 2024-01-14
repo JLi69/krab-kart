@@ -10,7 +10,13 @@ pub mod kart;
 pub mod load_assets;
 pub mod powerup;
 
-#[derive(PartialEq, Eq, Hash)]
+const DEFAULT_SPRITE_SIZE: f64 = 24.0 / 256.0;
+const MAX_SPEED: f64 = 4.0;
+const MAX_ROTATION_SPEED: f64 = 0.4;
+
+pub const SPRITE_SIZE: f64 = 0.1;
+
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub enum SpriteType {
     Kart1,
     Kart2,
@@ -22,7 +28,7 @@ pub enum SpriteType {
     Powerup,
 }
 
-pub struct Sprite<'a> {
+pub struct Sprite {
     pub trans_x: f64,
     pub trans_z: f64,
     pub rotation: f64,
@@ -37,46 +43,65 @@ pub struct Sprite<'a> {
     pub max_speed: f64,
     pub frame: i32,
     pub frame_count: i32, //Number of rotation frames that the sprite has
-    pub spr_texture: Option<&'a Texture<'a>>,
     pub sprite_type: SpriteType,
 }
 
-impl<'a> Sprite<'a> {
-    pub fn new(
-        x: f64,
-        z: f64,
-        spr_type: SpriteType,
-        sprite_assets: &'a HashMap<SpriteType, Texture<'a>>,
-    ) -> Sprite<'a> {
-        let texutre_ref: Option<&Texture<'a>>;
-
-        match sprite_assets.get(&spr_type) {
-            Some(sprite_image) => {
-                texutre_ref = Some(sprite_image);
-            }
-            None => {
-                texutre_ref = None;
-            }
-        }
-
+impl Sprite {
+    pub fn new(x: f64, z: f64, spr_type: SpriteType) -> Sprite {
         Sprite {
             trans_x: x,
             trans_z: z,
             rotation: 0.0,
-            width: 24.0 / 256.0, //Default width and height are both 24 / 256
-            height: 24.0 / 256.0,
+            width: DEFAULT_SPRITE_SIZE,
+            height: DEFAULT_SPRITE_SIZE,
             speed: 0.0,
-            max_speed: 4.0,
+            max_speed: MAX_SPEED,
+            friction: 0.0,
+            acceleration: 0.0,
+            rotation_speed: 0.0,
+            max_rotation_speed: MAX_ROTATION_SPEED,
+            frame: 0,
+            frame_count: 1,
+            camera_kart: false,
+            sprite_type: spr_type,
+        }
+    }
+
+    pub fn from_tuple(pos: (f64, f64), spr_type: SpriteType) -> Sprite {
+        let (x, z) = pos;
+        Sprite {
+            trans_x: x,
+            trans_z: z,
+            rotation: 0.0,
+            width: DEFAULT_SPRITE_SIZE,
+            height: DEFAULT_SPRITE_SIZE,
+            speed: 0.0,
+            max_speed: MAX_SPEED,
             friction: 0.0,
             acceleration: 0.0,
             rotation_speed: 0.0,
             max_rotation_speed: 0.4,
             frame: 0,
             frame_count: 1,
-            spr_texture: texutre_ref,
             camera_kart: false,
             sprite_type: spr_type,
         }
+    }
+
+    pub fn set_size(mut self, w: f64, h: f64) -> Self {
+        self.width = w;
+        self.height = h;
+        self
+    }
+
+    pub fn set_framecount(mut self, frame_count: i32) -> Self {
+        self.frame_count = frame_count;
+        self
+    }
+
+    pub fn set_rotation(mut self, rotation: f64) -> Self {
+        self.rotation = rotation;
+        self
     }
 
     //canvas origin is top left corner of canvas
@@ -88,8 +113,8 @@ impl<'a> Sprite<'a> {
         pixel_buff_height: usize,
         canvas_dimensions: &(u32, u32),
         canvas_origin: &(i32, i32),
+        sprite_assets: &HashMap<SpriteType, Texture>,
     ) -> Result<(), String> {
-        //Test graphic draw sprite
         let trans_sprite_x = (self.trans_x - cam.trans_x) * (cam.rotation).cos()
             - (self.trans_z - cam.trans_z) * (cam.rotation).sin();
         let trans_sprite_z = (self.trans_z - cam.trans_z) * (cam.rotation).cos()
@@ -159,10 +184,14 @@ impl<'a> Sprite<'a> {
         }
 
         if sprite_h > 0.005 {
-            match self.spr_texture {
+            match sprite_assets.get(&self.sprite_type) {
                 Some(tex) => {
-                    canv.copy(tex, Rect::new(self.frame * 32, 0, 32, 32), sprite_rect)
-                        .map_err(|e| e.to_string())?;
+                    canv.copy(
+                        tex,
+                        Rect::new(self.get_rotation_frame(cam) * 32, 0, 32, 32),
+                        sprite_rect,
+                    )
+                    .map_err(|e| e.to_string())?;
                 }
                 _ => {}
             }
@@ -179,23 +208,24 @@ impl<'a> Sprite<'a> {
     //this is to create a sense of rotation when driving the kart and give the
     //player feedback on where they are turning as if we just used set_rotation_frame,
     //as the camera follows the sprite it will always appear to be the same rotation
-    fn set_kart_rotation_frame(&mut self) {
+    fn get_kart_rotation_frame(&self) -> i32 {
         if self.rotation_speed < -0.05 {
             //Turning to the left
-            self.frame = self.frame_count - 1;
+            return self.frame_count - 1;
         } else if self.rotation_speed > 0.05 {
             //Turning to the right
-            self.frame = 1;
+            return 1;
         } else if self.rotation_speed == 0.0 {
             //Not turning
-            self.frame = 0;
+            return 0;
         }
+
+        0
     }
 
-    pub fn set_rotation_frame(&mut self, cam: &Camera) {
+    pub fn get_rotation_frame(&self, cam: &Camera) -> i32 {
         if self.camera_kart {
-            self.set_kart_rotation_frame();
-            return;
+            return self.get_kart_rotation_frame();
         }
 
         let mut trans_angle =
@@ -206,7 +236,7 @@ impl<'a> Sprite<'a> {
         while trans_angle >= 3.14159 * 2.0 {
             trans_angle -= 3.14159 * 2.0;
         }
-        self.frame = (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32;
+        return (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32;
     }
 
     //Returns distance to camera squared

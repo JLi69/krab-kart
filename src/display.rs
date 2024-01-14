@@ -1,6 +1,6 @@
 use crate::level::Camera;
 use crate::sprite::kart::{Kart, PowerupType};
-use crate::sprite::Sprite;
+use crate::sprite::{Sprite, SpriteType};
 use sdl2::pixels::Color;
 use sdl2::rect::{Point, Rect};
 use sdl2::render::{Canvas, Texture, TextureCreator};
@@ -11,25 +11,18 @@ use std::collections::HashMap;
 pub fn display_sprites(
     canvas: &mut Canvas<Window>,
     cam: &Camera,
-    sprites: &mut Vec<&mut Sprite>,
+    sprites: &[&Sprite],
     canvas_dimensions: &(u32, u32),
     offset_y: i32,
     canvas_origin: &(i32, i32),
     pix_buff_w: usize,
     pix_buff_h: usize,
+    sprite_assets: &HashMap<SpriteType, Texture>,
 ) -> Result<(), String> {
-    //Sort sprite vector based on distance to camera
-    sprites.sort_by(|sprite1, sprite2| {
-        sprite2
-            .dist2_to_camera(cam)
-            .partial_cmp(&sprite1.dist2_to_camera(cam))
-            .unwrap()
-    });
-
     //Draw the sprites
     if canvas_dimensions.1 * pix_buff_w as u32 / pix_buff_h as u32 > canvas_dimensions.0 {
         for spr in sprites {
-            spr.set_rotation_frame(cam);
+            //spr.set_rotation_frame(cam);
             spr.display(
                 canvas,
                 cam,
@@ -37,12 +30,13 @@ pub fn display_sprites(
                 pix_buff_h,
                 canvas_dimensions,
                 canvas_origin,
+                &sprite_assets,
             )
             .map_err(|e| e.to_string())?;
         }
     } else {
         for spr in sprites {
-            spr.set_rotation_frame(cam);
+            //spr.set_rotation_frame(cam);
             spr.display(
                 canvas,
                 cam,
@@ -50,6 +44,7 @@ pub fn display_sprites(
                 pix_buff_h,
                 canvas_dimensions,
                 &(canvas_origin.0, canvas_origin.1 + offset_y),
+                &sprite_assets,
             )
             .map_err(|e| e.to_string())?;
         }
@@ -57,6 +52,7 @@ pub fn display_sprites(
 
     Ok(())
 }
+
 pub fn display_text_left_justify(
     canvas: &mut Canvas<Window>,
     texture_creator: &TextureCreator<WindowContext>,
@@ -291,44 +287,6 @@ pub fn display_start_timer(
             String::from("GO!"),
             Color::WHITE,
             64,
-        )
-        .map_err(|e| e.to_string())?;
-    }
-
-    Ok(())
-}
-
-pub fn display_victory_twoplayer(
-    canvas: &mut Canvas<Window>,
-    player_kart1: &Kart,
-    player_kart2: &Kart,
-    texture_creator: &TextureCreator<WindowContext>,
-    canvas_dimensions: &(u32, u32),
-    font: &Font,
-) -> Result<(), String> {
-    //Victory at 4 laps
-    if player_kart1.laps == 4 {
-        display_text_center(
-            canvas,
-            &texture_creator,
-            canvas_dimensions.0 as i32 / 2,
-            canvas_dimensions.1 as i32 / 2 - 32,
-            &font,
-            String::from("PLAYER 1 WINS!"),
-            Color::RED,
-            32,
-        )
-        .map_err(|e| e.to_string())?;
-    } else if player_kart2.laps == 4 {
-        display_text_center(
-            canvas,
-            &texture_creator,
-            canvas_dimensions.0 as i32 / 2,
-            canvas_dimensions.1 as i32 / 2 - 32,
-            &font,
-            String::from("PLAYER 2 WINS!"),
-            Color::BLUE,
-            32,
         )
         .map_err(|e| e.to_string())?;
     }
