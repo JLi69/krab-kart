@@ -1,4 +1,5 @@
 use crate::level::Camera;
+use crate::menu::Text;
 use crate::sprite::kart::{Kart, PowerupType};
 use crate::sprite::{Sprite, SpriteType};
 use sdl2::pixels::Color;
@@ -8,31 +9,32 @@ use sdl2::ttf::Font;
 use sdl2::video::{Window, WindowContext};
 use std::collections::HashMap;
 
+pub fn cmp_aspect(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> bool {
+    let (canv_w, canv_h) = canvas_dimensions;
+    canv_h * buff_w as u32 / buff_h as u32 > canv_w
+}
+
 pub fn display_sprites(
     canvas: &mut Canvas<Window>,
     cam: &Camera,
     sprites: &[&Sprite],
     canvas_dimensions: (u32, u32),
-    offset_y: i32,
     canvas_origin: (i32, i32),
-    pix_buff_w: usize,
-    pix_buff_h: usize,
+    buff_dimensions: (usize, usize),
     sprite_assets: &HashMap<SpriteType, Texture>,
 ) -> Result<(), String> {
     //Draw the sprites
-    if canvas_dimensions.1 * pix_buff_w as u32 / pix_buff_h as u32 > canvas_dimensions.0 {
+    /*if canvas_dimensions.1 * buff_w as u32 / buff_h as u32 > canvas_dimensions.0 {
         for spr in sprites {
             //spr.set_rotation_frame(cam);
             spr.display(
                 canvas,
                 cam,
-                pix_buff_w,
-                pix_buff_h,
+                buff_dimensions,
                 canvas_dimensions,
                 canvas_origin,
                 sprite_assets,
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
         }
     } else {
         for spr in sprites {
@@ -40,133 +42,37 @@ pub fn display_sprites(
             spr.display(
                 canvas,
                 cam,
-                pix_buff_w,
-                pix_buff_h,
+                buff_dimensions,
                 canvas_dimensions,
                 (canvas_origin.0, canvas_origin.1 + offset_y),
                 sprite_assets,
-            )
-            .map_err(|e| e.to_string())?;
+            )?;
         }
+    }*/
+
+    for spr in sprites {
+        spr.display(
+            canvas,
+            cam,
+            buff_dimensions,
+            canvas_dimensions,
+            (canvas_origin.0, canvas_origin.1),
+            sprite_assets,
+        )?;
     }
 
     Ok(())
 }
 
-pub fn display_text_left_justify(
-    canvas: &mut Canvas<Window>,
-    texture_creator: &TextureCreator<WindowContext>,
-    x: i32,
-    y: i32,
-    font: &Font,
-    text: String,
-    col: Color,
-    char_sz: u32,
-) -> Result<(), String> {
-    let font_surface = font
-        .render(text.as_str())
-        .solid(col)
-        .map_err(|e| e.to_string())?;
-    let font_texture = texture_creator
-        .create_texture_from_surface(&font_surface)
-        .map_err(|e| e.to_string())?;
-    canvas
-        .copy(
-            &font_texture,
-            None,
-            Rect::new(x, y, char_sz * text.len() as u32, char_sz * 2),
-        )
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-pub fn display_text_center(
-    canvas: &mut Canvas<Window>,
-    texture_creator: &TextureCreator<WindowContext>,
-    x: i32,
-    y: i32,
-    font: &Font,
-    text: String,
-    col: Color,
-    char_sz: u32,
-) -> Result<(), String> {
-    let font_surface = font
-        .render(text.as_str())
-        .solid(col)
-        .map_err(|e| e.to_string())?;
-    let font_texture = texture_creator
-        .create_texture_from_surface(&font_surface)
-        .map_err(|e| e.to_string())?;
-    canvas
-        .copy(
-            &font_texture,
-            None,
-            Rect::new(
-                x - char_sz as i32 * text.len() as i32 / 2,
-                y,
-                char_sz * text.len() as u32,
-                char_sz * 2,
-            ),
-        )
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-pub fn display_text_right_justify(
-    canvas: &mut Canvas<Window>,
-    texture_creator: &TextureCreator<WindowContext>,
-    x: i32,
-    y: i32,
-    font: &Font,
-    text: String,
-    col: Color,
-    char_sz: u32,
-) -> Result<(), String> {
-    let font_surface = font
-        .render(text.as_str())
-        .solid(col)
-        .map_err(|e| e.to_string())?;
-    let font_texture = texture_creator
-        .create_texture_from_surface(&font_surface)
-        .map_err(|e| e.to_string())?;
-    canvas
-        .copy(
-            &font_texture,
-            None,
-            Rect::new(
-                x - text.len() as i32 * char_sz as i32,
-                y,
-                char_sz * text.len() as u32,
-                char_sz * 2,
-            ),
-        )
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-pub fn calculate_texture_rect(
-    canvas_dimensions: &(u32, u32),
-    pix_buff_w: usize,
-    pix_buff_h: usize,
-) -> Rect {
-    if canvas_dimensions.1 * pix_buff_w as u32 / pix_buff_h as u32 > canvas_dimensions.0 {
-        Rect::from_center(
-            Point::new(
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2,
-            ),
-            canvas_dimensions.1 * pix_buff_w as u32 / pix_buff_h as u32,
-            canvas_dimensions.1,
-        )
+pub fn calculate_texture_rect(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> Rect {
+    let (canv_w, canv_h) = canvas_dimensions;
+    let center = Point::new(canv_w as i32 / 2, canv_h as i32 / 2);
+    if canv_h * buff_w as u32 / buff_h as u32 > canv_w {
+        let width = canv_h * buff_w as u32 / buff_h as u32;
+        Rect::from_center(center, width, canv_h)
     } else {
-        Rect::from_center(
-            Point::new(
-                canvas_dimensions.0 as i32 / 2,
-                canvas_dimensions.1 as i32 / 2,
-            ),
-            canvas_dimensions.0,
-            canvas_dimensions.0 * pix_buff_h as u32 / pix_buff_w as u32,
-        )
+        let height = canv_w * buff_h as u32 / buff_w as u32;
+        Rect::from_center(center, canv_w, height)
     }
 }
 
@@ -179,49 +85,38 @@ pub fn display_player_info(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    //Display speed
-    display_text_left_justify(
-        canvas,
-        texture_creator,
+    let speed_text = Text::new(
+        format!("speed: {}", ((kart.speed * 100.0 * 20.0).round() / 100.0)).as_str(),
         x + 16,
         y + 16,
-        font,
-        format!(
-            "speed: {}",
-            ((kart.sprite.speed * 100.0 * 20.0).round() / 100.0)
-        ),
         Color::WHITE,
         16,
-    )
-    .map_err(|e| e.to_string())?;
+    );
+    //Display speed
+    speed_text.display_left_justify(canvas, texture_creator, font)?;
 
-    display_text_left_justify(
-        canvas,
-        texture_creator,
+    let laps_text = Text::new(
+        format!("laps: {}", kart.laps).as_str(),
         x + 16,
         y + 40,
-        font,
-        format!("laps: {}", kart.laps),
         Color::WHITE,
         16,
-    )
-    .map_err(|e| e.to_string())?;
+    );
+    laps_text.display_left_justify(canvas, texture_creator, font)?;
 
-    display_text_left_justify(
-        canvas,
-        texture_creator,
-        x + 16,
-        y + 80,
-        font,
+    let pos_text = Text::new(
         format!(
             "pos: {}, {}",
             ((kart.sprite.trans_x * 100.0).round() / 100.0),
             ((kart.sprite.trans_z * 100.0).round() / 100.0)
-        ),
+        )
+        .as_str(),
+        x + 16,
+        y + 80,
         Color::WHITE,
         8,
-    )
-    .map_err(|e| e.to_string())?;
+    );
+    pos_text.display_left_justify(canvas, texture_creator, font)?;
 
     Ok(())
 }
@@ -234,21 +129,12 @@ pub fn display_powerup_icons(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    for i in 0..kart.powerup_amt {
+    for i in 0..(kart.powerup_amt as i32) {
         if let Some(tex) = icons.get(&kart.powerup) {
-            canvas
-                .copy(
-                    tex,
-                    None,
-                    Rect::new(
-                        x + i as i32 * icon_sz as i32 / 4 * 3
-                            - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3,
-                        y,
-                        icon_sz,
-                        icon_sz,
-                    ),
-                )
-                .map_err(|e| e.to_string())?;
+            let offset =
+                i * icon_sz as i32 / 4 * 3 - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3;
+            let rect = Rect::new(x + offset, y, icon_sz, icon_sz);
+            canvas.copy(tex, None, rect).map_err(|e| e.to_string())?;
         }
     }
 
@@ -258,34 +144,31 @@ pub fn display_powerup_icons(
 pub fn display_start_timer(
     canvas: &mut Canvas<Window>,
     texture_creator: &TextureCreator<WindowContext>,
-    canvas_dimensions: &(u32, u32),
+    canvas_dimensions: (u32, u32),
     font: &Font,
     start_timer: f64,
 ) -> Result<(), String> {
+    let (canv_w, canv_h) = canvas_dimensions;
     if start_timer.ceil() > 0.0 {
-        display_text_center(
-            canvas,
-            texture_creator,
-            canvas_dimensions.0 as i32 / 2,
-            canvas_dimensions.1 as i32 / 2 - 64,
-            font,
-            format!("{}", start_timer.ceil()),
+        let text = Text::new(
+            format!("{}", start_timer.ceil()).as_str(),
+            canv_w as i32 / 2,
+            canv_h as i32 / 2 - 64,
             Color::WHITE,
             64,
-        )
-        .map_err(|e| e.to_string())?;
+        );
+
+        text.display_center(canvas, texture_creator, font)?;
     } else if start_timer.ceil() == 0.0 {
-        display_text_center(
-            canvas,
-            texture_creator,
-            canvas_dimensions.0 as i32 / 2,
-            canvas_dimensions.1 as i32 / 2 - 64,
-            font,
-            String::from("GO!"),
+        let text = Text::new(
+            "GO!",
+            canv_w as i32 / 2,
+            canv_h as i32 / 2 - 64,
             Color::WHITE,
             64,
-        )
-        .map_err(|e| e.to_string())?;
+        );
+
+        text.display_center(canvas, texture_creator, font)?;
     }
 
     Ok(())

@@ -12,10 +12,21 @@ pub mod load_assets;
 pub mod powerup;
 
 const DEFAULT_SPRITE_SIZE: f64 = 24.0 / 256.0;
-const MAX_SPEED: f64 = 4.0;
-const MAX_ROTATION_SPEED: f64 = 0.4;
-
 pub const SPRITE_SIZE: f64 = 0.1;
+
+//Distance between two sprites
+pub fn dist_between(spr1: &Sprite, spr2: &Sprite) -> f64 {
+    ((spr1.trans_x - spr2.trans_x) * (spr1.trans_x - spr2.trans_x)
+        + (spr1.trans_z - spr2.trans_z) * (spr1.trans_z - spr2.trans_z))
+        .sqrt()
+}
+
+pub fn xz_diff_norm(spr1: &Sprite, spr2: &Sprite) -> (f64, f64) {
+    let dist = dist_between(spr1, spr2);
+    let xdiff = spr1.trans_x - spr2.trans_x;
+    let zdiff = spr1.trans_z - spr2.trans_z;
+    (xdiff / dist, zdiff / dist)
+}
 
 fn camera_translate(x: f64, z: f64, cam: &Camera) -> (f64, f64) {
     let translated_x = x - cam.trans_x;
@@ -51,7 +62,7 @@ fn screen_position(x: f64, z: f64, cam: &Camera, buff_w: usize, buff_h: usize) -
 //of the pixel buffer size
 fn cmp_aspect(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> bool {
     let (canv_w, canv_h) = canvas_dimensions;
-    (canv_h * buff_w as u32) / (buff_h as u32) > canv_w 
+    (canv_h * buff_w as u32) / (buff_h as u32) > canv_w
 }
 
 fn get_rect_x_offset(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> i32 {
@@ -84,15 +95,10 @@ pub struct Sprite {
     pub trans_x: f64,
     pub trans_z: f64,
     pub rotation: f64,
-    pub speed: f64,
-    pub camera_kart: bool, //Stores if it is the kart that is focused on in the camera
     pub rotation_speed: f64,
-    pub max_rotation_speed: f64,
+    pub camera_kart: bool, //Stores if it is the kart that is focused on in the camera
     pub width: f64,
     pub height: f64,
-    pub acceleration: f64,
-    pub friction: f64,
-    pub max_speed: f64,
     pub frame: i32,
     pub frame_count: i32, //Number of rotation frames that the sprite has
     pub sprite_type: SpriteType,
@@ -104,14 +110,9 @@ impl Sprite {
             trans_x: x,
             trans_z: z,
             rotation: 0.0,
+            rotation_speed: 0.0,
             width: DEFAULT_SPRITE_SIZE,
             height: DEFAULT_SPRITE_SIZE,
-            speed: 0.0,
-            max_speed: MAX_SPEED,
-            friction: 0.0,
-            acceleration: 0.0,
-            rotation_speed: 0.0,
-            max_rotation_speed: MAX_ROTATION_SPEED,
             frame: 0,
             frame_count: 1,
             camera_kart: false,
@@ -125,14 +126,9 @@ impl Sprite {
             trans_x: x,
             trans_z: z,
             rotation: 0.0,
+            rotation_speed: 0.0,
             width: DEFAULT_SPRITE_SIZE,
             height: DEFAULT_SPRITE_SIZE,
-            speed: 0.0,
-            max_speed: MAX_SPEED,
-            friction: 0.0,
-            acceleration: 0.0,
-            rotation_speed: 0.0,
-            max_rotation_speed: 0.4,
             frame: 0,
             frame_count: 1,
             camera_kart: false,
@@ -161,29 +157,20 @@ impl Sprite {
         &self,
         canv: &mut Canvas<Window>,
         cam: &Camera,
-        buff_w: usize,
-        buff_h: usize,
+        buff_dimensions: (usize, usize),
         canvas_dimensions: (u32, u32),
         canvas_origin: (i32, i32),
         sprite_assets: &HashMap<SpriteType, Texture>,
     ) -> Result<(), String> {
+        let (buff_w, buff_h) = buff_dimensions;
         let (cam_x, cam_z) = camera_translate(self.trans_x, self.trans_z, cam);
         let (trans_sprite_x, trans_sprite_z) = camera_rotate(cam_x, cam_z, cam);
         //Scale sprite based on how far it is from the camera
-        let (sprite_w, sprite_h) = screen_dimensions(
-            self.width, 
-            self.height, 
-            trans_sprite_z
-        );
+        let (sprite_w, sprite_h) = screen_dimensions(self.width, self.height, trans_sprite_z);
         //Get the sprite's position on the screen
-        let (spr_screen_x, spr_screen_y) = screen_position(
-            trans_sprite_x, 
-            trans_sprite_z, 
-            cam, 
-            buff_w, 
-            buff_h 
-        );
-        
+        let (spr_screen_x, spr_screen_y) =
+            screen_position(trans_sprite_x, trans_sprite_z, cam, buff_w, buff_h);
+
         let (canv_w, canv_h) = (canvas_dimensions.0 as f64, canvas_dimensions.1 as f64);
         let (origin_x, origin_y) = canvas_origin;
         let sprite_rect = if cmp_aspect(canvas_dimensions, buff_w, buff_h) {
@@ -212,7 +199,8 @@ impl Sprite {
             if let Some(tex) = sprite_assets.get(&self.sprite_type) {
                 let frame = self.get_rotation_frame(cam);
                 let tex_rect = Rect::new(frame * 32, 0, 32, 32);
-                canv.copy(tex, tex_rect, sprite_rect).map_err(|e| e.to_string())?;
+                canv.copy(tex, tex_rect, sprite_rect)
+                    .map_err(|e| e.to_string())?;
             }
         }
 
@@ -262,38 +250,4 @@ impl Sprite {
         (self.trans_x - cam.trans_x) * (self.trans_x - cam.trans_x)
             + (self.trans_z - cam.trans_z) * (self.trans_z - cam.trans_z)
     }
-
-    pub fn update(&mut self, dt: f64) {
-        if self.speed > self.max_speed {
-            self.acceleration = -(self.speed - self.max_speed) * 0.5;
-        }
-
-        self.speed += (self.acceleration - self.friction) * dt;
-
-        if self.rotation_speed > self.max_rotation_speed {
-            self.rotation_speed = self.max_rotation_speed;
-        }
-
-        if self.speed < 0.0 {
-            self.speed = 0.0;
-        }
-
-        self.trans_x += self.rotation.sin() * self.speed * dt;
-        self.trans_z += self.rotation.cos() * self.speed * dt;
-        self.rotation += self.rotation_speed * dt;
-    }
-}
-
-//Distance between two sprites
-pub fn dist_between(spr1: &Sprite, spr2: &Sprite) -> f64 {
-    ((spr1.trans_x - spr2.trans_x) * (spr1.trans_x - spr2.trans_x)
-        + (spr1.trans_z - spr2.trans_z) * (spr1.trans_z - spr2.trans_z))
-        .sqrt()
-}
-
-pub fn xz_diff_norm(spr1: &Sprite, spr2: &Sprite) -> (f64, f64) {
-    let dist = dist_between(spr1, spr2);
-    let xdiff = spr1.trans_x - spr2.trans_x;
-    let zdiff = spr1.trans_z - spr2.trans_z;
-    (xdiff / dist, zdiff / dist)
 }

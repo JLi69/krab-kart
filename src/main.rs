@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 extern crate sdl2;
 
+use menu::Text;
 use pausemenu::PauseMenu;
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::render::BlendMode;
@@ -140,7 +141,7 @@ fn main() -> Result<(), String> {
                     &track_textures,
                 )?;
                 main_menu.display(&mut canvas, &texture, &texture_creator, &events, &font)?;
-                let selected_screen = main_menu.press_buttons(&mut events, &canvas_dimensions);
+                let selected_screen = main_menu.press_buttons(&mut events, canvas_dimensions);
 
                 if let Some(selected_screen) = selected_screen {
                     screen = selected_screen;
@@ -172,7 +173,7 @@ fn main() -> Result<(), String> {
                 let sz = pixel_buffer.len() / 2;
                 let canvas_dimensions = canvas.output_size()?;
                 let canvas_texture_rect =
-                    display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+                    display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
                 two_player_state.create_background_texture(
                     &mut pixel_buffer,
                     &track,
@@ -212,16 +213,14 @@ fn main() -> Result<(), String> {
             screen = GameScreen::MainMenu;
         }
 
-        display::display_text_right_justify(
-            &mut canvas,
-            &texture_creator,
+        let fps_text = Text::new(
+            format!("FPS: {}", fps.round()).as_str(),
             canvas_dimensions.0 as i32 - 16,
             16,
-            &font,
-            format!("FPS: {}", fps.round()),
             Color::WHITE,
             8,
-        )?;
+        );
+        fps_text.display_right_justify(&mut canvas, &texture_creator, &font)?;
 
         events.update();
         canvas.present();

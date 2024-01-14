@@ -63,48 +63,42 @@ pub fn load_assets<'a>(
 
     sprite_images.insert(
         SpriteType::Kart1,
-        load_texture("assets/images/kart1.png", texture_creator).map_err(|e| e.to_string())?,
+        load_texture("assets/images/kart1.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Kart2,
-        load_texture("assets/images/kart2.png", texture_creator).map_err(|e| e.to_string())?,
+        load_texture("assets/images/kart2.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Checkpoint1,
-        load_texture("assets/images/kart-checkpoint1.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/kart-checkpoint1.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Checkpoint2,
-        load_texture("assets/images/kart-checkpoint2.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/kart-checkpoint2.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Banana,
-        load_texture("assets/images/enemies/banana.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/enemies/banana.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Powerup,
-        load_texture("assets/images/powerups/powerupblock.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/powerups/powerupblock.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Enemy,
-        load_texture("assets/images/enemies/ghost.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/enemies/ghost.png", texture_creator)?,
     );
 
     sprite_images.insert(
         SpriteType::Fireball,
-        load_texture("assets/images/enemies/fireball.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/enemies/fireball.png", texture_creator)?,
     );
 
     Ok(sprite_images)
@@ -117,20 +111,17 @@ pub fn load_powerup_icon_assets<'a>(
 
     powerup_icons.insert(
         PowerupType::Banana,
-        load_texture("assets/images/powerups/bananaicon.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/powerups/bananaicon.png", texture_creator)?,
     );
 
     powerup_icons.insert(
         PowerupType::SpeedBoost,
-        load_texture("assets/images/powerups/speedboosticon.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/powerups/speedboosticon.png", texture_creator)?,
     );
 
     powerup_icons.insert(
         PowerupType::Fireball,
-        load_texture("assets/images/powerups/fireballicon.png", texture_creator)
-            .map_err(|e| e.to_string())?,
+        load_texture("assets/images/powerups/fireballicon.png", texture_creator)?,
     );
 
     Ok(powerup_icons)

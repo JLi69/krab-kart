@@ -38,9 +38,9 @@ impl SingeplayerState {
         font: &Font,
     ) -> Result<(), String> {
         let mut timer_text = Text::new("", 0, 0, Color::WHITE, 32);
-        let canvas_dimensions = canvas.output_size()?;
-        timer_text.x = 0;
-        timer_text.y = -(canvas_dimensions.1 as i32) / 8 * 3 - 32;
+        let (canv_w, canv_h) = canvas.output_size()?;
+        timer_text.x = canv_w as i32 / 2;
+        timer_text.y = (canv_h as i32) / 8 - 32;
         //Display timer
         let minutes = (self.timer / 60.0).floor();
         let seconds = (self.timer - 60.0 * minutes).floor();
@@ -61,8 +61,7 @@ impl SingeplayerState {
     ) -> Result<(), String> {
         //Display background
         let canvas_dimensions = canvas.output_size()?;
-        let canvas_texture_rect =
-            display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+        let canvas_texture_rect = display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
 
         let texture_rect = Rect::from_center(
             Point::new(
@@ -96,14 +95,21 @@ impl SingeplayerState {
 
         //Print DONE when player reaches 4 laps
         if self.done() {
-            let victory_text = Text::new("DONE!", 0, 0, Color::WHITE, 32);
+            let (canv_w, canv_h) = canvas_dimensions;
+            let victory_text = Text::new(
+                "DONE!",
+                canv_w as i32 / 2,
+                canv_h as i32 / 2 - 32,
+                Color::WHITE,
+                32,
+            );
             victory_text.display_center(canvas, texture_creator, font)?;
         }
 
         display::display_start_timer(
             canvas,
             texture_creator,
-            &canvas_dimensions,
+            canvas_dimensions,
             font,
             self.start_timer,
         )?;
@@ -138,8 +144,7 @@ impl SingeplayerState {
     ) -> Result<(), String> {
         let canvas_dimensions = canvas.output_size()?;
         let canvas_dimensions_half = (canvas_dimensions.0, canvas_dimensions.1 / 2);
-        let canvas_texture_rect =
-            display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+        let canvas_texture_rect = display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
 
         let texture_rect = Rect::from_center(
             Point::new(
@@ -152,15 +157,20 @@ impl SingeplayerState {
 
         let origin_y = texture_rect.y() / 2;
         let sprites_to_draw = self.get_sprites_to_draw();
+
+        let offset_y = if display::cmp_aspect(canvas_dimensions_half, WIDTH, HEIGHT / 2) {
+            0
+        } else {
+            origin_y + texture_rect.height() as i32 / 2 - canvas_dimensions_half.1 as i32
+        };
+
         display::display_sprites(
             canvas,
             &self.cam,
             &sprites_to_draw,
             canvas_dimensions_half,
-            origin_y + texture_rect.height() as i32 / 2 - canvas_dimensions_half.1 as i32,
-            (0, canvas_dimensions_half.1 as i32),
-            WIDTH,
-            HEIGHT / 2,
+            (0, canvas_dimensions_half.1 as i32 + offset_y),
+            (WIDTH, HEIGHT / 2),
             sprite_assets,
         )?;
 

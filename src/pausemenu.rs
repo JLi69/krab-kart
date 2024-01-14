@@ -32,18 +32,17 @@ impl PauseMenu {
             return Ok(());
         }
 
-        let canvas_dimensions = canvas.output_size()?;
+        let (canv_w, canv_h) = canvas.output_size()?;
 
         canvas.set_draw_color(Color::RGBA(128, 128, 128, 200));
         canvas
-            .fill_rect(Rect::new(0, 0, canvas_dimensions.0, canvas_dimensions.1))
+            .fill_rect(Rect::new(0, 0, canv_w, canv_h))
             .map_err(|e| e.to_string())?;
 
-        let canvas_dimensions = canvas.output_size()?;
         let text = Text::new(
             "PAUSED",
-            0,
-            -(canvas_dimensions.1 as i32) / 4 + 32,
+            canv_w as i32 / 2,
+            (canv_h as i32) / 4 - 64,
             Color::WHITE,
             64,
         );
@@ -62,9 +61,9 @@ impl PauseMenu {
             return false;
         }
 
-        if self.goto_game.clicked(events, &canvas_dimensions) {
+        if self.goto_game.clicked(events, canvas_dimensions) {
             self.paused = false;
-        } else if self.goto_menu.clicked(events, &canvas_dimensions) {
+        } else if self.goto_menu.clicked(events, canvas_dimensions) {
             self.paused = false;
             return true;
         }

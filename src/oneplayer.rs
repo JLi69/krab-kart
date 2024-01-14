@@ -51,7 +51,7 @@ impl SingeplayerState {
             self.player_kart.move_kart(dt);
         }
 
-        self.player_kart.sprite.camera_kart = self.player_kart.knock_out <= 0.0;
+        self.player_kart.sprite.camera_kart = !self.player_kart.knocked_out();
         if level.kart_at_checkpoint(&self.player_kart, self.player_kart.current_checkpoint, 1.0) {
             if self.player_kart.current_checkpoint == level.checkpoints.len() - 1 {
                 self.player_kart.laps += 1;
@@ -65,13 +65,13 @@ impl SingeplayerState {
 
         self.player_kart.apply_friction(level);
 
-        if self.player_kart.knock_out <= 0.0 {
+        if !self.player_kart.knocked_out() {
             self.cam
                 .follow(&self.player_kart.sprite, DEFAULT_CAM_FOLLOW_DIST);
         }
 
         if self.player_kart.laps == 4 {
-            self.player_kart.sprite.speed = 0.0;
+            self.player_kart.speed = 0.0;
             self.player_kart.sprite.rotation_speed = 0.0;
         }
     }
@@ -79,7 +79,7 @@ impl SingeplayerState {
     fn update_enemies(&mut self, dt: f64) {
         for enemy in &mut self.enemies {
             if dist_between(&enemy.sprite, &self.player_kart.sprite) < 0.2
-                && self.player_kart.knock_out <= 0.0
+                && !self.player_kart.knocked_out()
             {
                 self.player_kart.knock_out = 1.0;
             }

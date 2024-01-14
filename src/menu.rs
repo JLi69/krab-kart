@@ -1,7 +1,7 @@
-use crate::display;
 use crate::events;
 use sdl2::pixels::Color;
-use sdl2::render::{Canvas, TextureCreator};
+use sdl2::rect::Rect;
+use sdl2::render::{Canvas, Texture, TextureCreator};
 use sdl2::ttf::Font;
 use sdl2::video::{Window, WindowContext};
 
@@ -21,7 +21,7 @@ impl Button {
         }
     }
 
-    fn mouse_hovering(&self, events: &events::Events, dimensions: &(u32, u32)) -> bool {
+    fn mouse_hovering(&self, events: &events::Events, dimensions: (u32, u32)) -> bool {
         let posx = events.mouse_state.x();
         let posy = events.mouse_state.y();
         let width = (self.text.len() * 24) as i32;
@@ -40,34 +40,25 @@ impl Button {
         font: &Font,
     ) -> Result<(), String> {
         let canvas_dimensions = canvas.output_size()?;
-        if self.mouse_hovering(events, &canvas_dimensions) {
-            display::display_text_center(
-                canvas,
-                texture_creator,
-                (canvas_dimensions.0 / 2) as i32 + self.x,
-                (canvas_dimensions.1 / 2) as i32 + self.y - 24,
-                font,
-                self.text.clone(),
-                Color::RGB(255, 128, 0),
-                24,
-            )?;
-        } else {
-            display::display_text_center(
-                canvas,
-                texture_creator,
-                (canvas_dimensions.0 / 2) as i32 + self.x,
-                (canvas_dimensions.1 / 2) as i32 + self.y - 24,
-                font,
-                self.text.clone(),
-                Color::WHITE,
-                24,
-            )?;
+        let (canv_w, canv_h) = canvas_dimensions;
+        let mut text = Text::new(
+            self.text.as_str(),
+            (canv_w / 2) as i32 + self.x,
+            (canv_h / 2) as i32 + self.y - 24,
+            Color::WHITE,
+            24,
+        );
+
+        if self.mouse_hovering(events, canvas_dimensions) {
+            text.color = Color::RGB(255, 128, 0);
         }
+
+        text.display_center(canvas, texture_creator, font)?;
 
         Ok(())
     }
 
-    pub fn clicked(&self, events: &mut events::Events, dimensions: &(u32, u32)) -> bool {
+    pub fn clicked(&self, events: &mut events::Events, dimensions: (u32, u32)) -> bool {
         self.mouse_hovering(events, dimensions) && events.left_is_clicked()
     }
 }
@@ -97,18 +88,60 @@ impl Text {
         texture_creator: &TextureCreator<WindowContext>,
         font: &Font,
     ) -> Result<(), String> {
-        let canvas_dimensions = canvas.output_size()?;
-        display::display_text_center(
-            canvas,
-            texture_creator,
-            (canvas_dimensions.0 / 2) as i32 + self.x,
-            (canvas_dimensions.1 / 2) as i32 + self.y - self.font_sz as i32,
-            font,
-            self.text.clone(),
-            self.color,
-            self.font_sz,
-        )?;
+        let font_texture = self.create_texture(font, texture_creator)?;
+        let width = self.font_sz as i32 * self.text.len() as i32;
+        let text_rect = Rect::new(self.x - width / 2, self.y, width as u32, self.font_sz * 2);
+        canvas
+            .copy(&font_texture, None, text_rect)
+            .map_err(|e| e.to_string())?;
 
         Ok(())
+    }
+
+    pub fn display_right_justify(
+        &self,
+        canvas: &mut Canvas<Window>,
+        texture_creator: &TextureCreator<WindowContext>,
+        font: &Font,
+    ) -> Result<(), String> {
+        let font_texture = self.create_texture(font, texture_creator)?;
+        let width = self.font_sz as i32 * self.text.len() as i32;
+        let text_rect = Rect::new(self.x - width, self.y, width as u32, self.font_sz * 2);
+        canvas
+            .copy(&font_texture, None, text_rect)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    pub fn display_left_justify(
+        &self,
+        canvas: &mut Canvas<Window>,
+        texture_creator: &TextureCreator<WindowContext>,
+        font: &Font,
+    ) -> Result<(), String> {
+        let font_texture = self.create_texture(font, texture_creator)?;
+        let width = self.font_sz * self.text.len() as u32;
+        let text_rect = Rect::new(self.x, self.y, width, self.font_sz * 2);
+        canvas
+            .copy(&font_texture, None, text_rect)
+            .map_err(|e| e.to_string())?;
+
+        Ok(())
+    }
+
+    fn create_texture<'a>(
+        &'a self,
+        font: &Font,
+        texture_creator: &'a TextureCreator<WindowContext>,
+    ) -> Result<Texture, String> {
+        let font_surface = font
+            .render(self.text.as_str())
+            .solid(self.color)
+            .map_err(|e| e.to_string())?;
+        let font_texture = texture_creator
+            .create_texture_from_surface(&font_surface)
+            .map_err(|e| e.to_string())?;
+        Ok(font_texture)
     }
 }

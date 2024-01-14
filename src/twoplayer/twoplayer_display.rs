@@ -17,7 +17,14 @@ impl TwoplayerState {
         texture_creator: &TextureCreator<WindowContext>,
         font: &Font,
     ) -> Result<(), String> {
-        let mut victory_text = Text::new("", 0, 0, Color::BLACK, 32);
+        let (canv_w, canv_h) = canvas.output_size()?;
+        let mut victory_text = Text::new(
+            "",
+            canv_w as i32 / 2,
+            canv_h as i32 / 2 - 32,
+            Color::BLACK,
+            32,
+        );
         if self.player_kart1.laps >= LAPS_TO_WIN {
             victory_text.text = String::from("PLAYER 1 WINS!");
             victory_text.color = Color::RED;
@@ -67,8 +74,7 @@ impl TwoplayerState {
         offset_y: u32,
     ) -> Result<(), String> {
         let canvas_dimensions = canvas.output_size()?;
-        let canvas_texture_rect =
-            display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+        let canvas_texture_rect = display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
 
         background_texture
             .update(None, pixel_buffer, WIDTH * 4)
@@ -101,7 +107,7 @@ impl TwoplayerState {
         display::display_start_timer(
             canvas,
             texture_creator,
-            &canvas_dimensions,
+            canvas_dimensions,
             font,
             self.start_timer,
         )?;
@@ -193,8 +199,7 @@ impl TwoplayerState {
     ) -> Result<(), String> {
         let canvas_dimensions = canvas.output_size()?;
         let canvas_dimensions_half = (canvas_dimensions.0, canvas_dimensions.1 / 2);
-        let canvas_texture_rect =
-            display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+        let canvas_texture_rect = display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
 
         let texture_rect = Rect::from_center(
             Point::new(
@@ -207,10 +212,10 @@ impl TwoplayerState {
 
         match kart {
             SpriteType::Kart1 => {
-                self.player_kart1.sprite.camera_kart = self.player_kart1.knock_out <= 0.0;
+                self.player_kart1.sprite.camera_kart = !self.player_kart1.knocked_out();
             }
             SpriteType::Kart2 => {
-                self.player_kart2.sprite.camera_kart = self.player_kart2.knock_out <= 0.0;
+                self.player_kart2.sprite.camera_kart = !self.player_kart2.knocked_out();
             }
             _ => {}
         }
@@ -218,30 +223,37 @@ impl TwoplayerState {
         let sprites_to_draw = self.get_sprites_to_draw(kart);
         match kart {
             SpriteType::Kart1 => {
+                let offset_y = if display::cmp_aspect(canvas_dimensions_half, WIDTH, HEIGHT / 2) {
+                    0
+                } else {
+                    texture_rect.y() / 2
+                };
+
                 display::display_sprites(
                     canvas,
                     &self.cam1,
                     &sprites_to_draw,
                     canvas_dimensions_half,
-                    texture_rect.y() / 2,
-                    (0, 0),
-                    WIDTH,
-                    HEIGHT / 2,
+                    (0, offset_y),
+                    (WIDTH, HEIGHT / 2),
                     sprite_assets,
                 )?;
             }
             SpriteType::Kart2 => {
-                let offset_y = (texture_rect.height() - canvas_dimensions_half.1) as i32;
+                let offset_y = if display::cmp_aspect(canvas_dimensions_half, WIDTH, HEIGHT / 2) {
+                    0
+                } else {
+                    (texture_rect.height() - canvas_dimensions_half.1) as i32
+                };
                 let origin_y = canvas_dimensions_half.1 as i32;
+
                 display::display_sprites(
                     canvas,
                     &self.cam2,
                     &sprites_to_draw,
                     canvas_dimensions_half,
-                    texture_rect.y() / 2 + offset_y,
-                    (0, origin_y),
-                    WIDTH,
-                    HEIGHT / 2,
+                    (0, origin_y + texture_rect.y() / 2 + offset_y),
+                    (WIDTH, HEIGHT / 2),
                     sprite_assets,
                 )?;
             }

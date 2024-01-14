@@ -52,7 +52,7 @@ impl MainMenuScreen {
     pub fn press_buttons(
         &self,
         events: &mut Events,
-        canvas_dimensions: &(u32, u32),
+        canvas_dimensions: (u32, u32),
     ) -> Option<GameScreen> {
         if self.quit_button.clicked(events, canvas_dimensions) {
             events.can_quit = true;
@@ -83,7 +83,7 @@ impl MainMenuScreen {
         );
 
         texture
-            .update(None, &pixel_buffer[0..], WIDTH * 4)
+            .update(None, pixel_buffer, WIDTH * 4)
             .map_err(|e| e.to_string())?;
 
         Ok(())
@@ -99,8 +99,7 @@ impl MainMenuScreen {
     ) -> Result<(), String> {
         //Get canvas dimensions
         let canvas_dimensions = canvas.output_size()?;
-        let canvas_texture_rect =
-            display::calculate_texture_rect(&canvas_dimensions, WIDTH, HEIGHT);
+        let canvas_texture_rect = display::calculate_texture_rect(canvas_dimensions, WIDTH, HEIGHT);
 
         //Display the background texture
         let texture_rect = Rect::from_center(
@@ -124,10 +123,11 @@ impl MainMenuScreen {
             .display(canvas, texture_creator, events, font)?;
 
         //Display title
+        let (canv_w, canv_h) = canvas_dimensions;
         let title_text = Text::new(
             "Krab Kart",
-            0,
-            -(canvas_dimensions.1 as i32) / 4 - 32,
+            canv_w as i32 / 2,
+            (canv_h as i32) / 4 - 64,
             Color::WHITE,
             64,
         );

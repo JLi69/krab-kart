@@ -18,7 +18,7 @@ const LAPS_TO_WIN: u32 = 4;
 
 fn knockout_kart(kart: &mut Kart, spr: &Sprite, dist: f64, time: f64) -> bool {
     if dist_between(spr, &kart.sprite) < dist {
-        if kart.knock_out <= 0.0 {
+        if !kart.knocked_out() {
             kart.knock_out = time;
         }
         return true;
@@ -59,7 +59,7 @@ fn player_use_powerup(
 ) {
     match kart.use_powerup() {
         PowerupType::SpeedBoost => {
-            kart.sprite.speed += 1.0;
+            kart.speed += 1.0;
         }
         PowerupType::Banana => {
             let banana = Sprite::new(
@@ -248,17 +248,17 @@ impl TwoplayerState {
         self.player_kart1.apply_friction(level);
         self.player_kart2.apply_friction(level);
 
-        if self.player_kart1.knock_out <= 0.0 {
+        if !self.player_kart1.knocked_out() {
             self.cam1.follow(&self.player_kart1.sprite, 1.1);
         }
-        if self.player_kart2.knock_out <= 0.0 {
+        if !self.player_kart2.knocked_out() {
             self.cam2.follow(&self.player_kart2.sprite, 1.1);
         }
 
         if self.race_over() {
-            self.player_kart1.sprite.speed = 0.0;
+            self.player_kart1.speed = 0.0;
             self.player_kart1.sprite.rotation_speed = 0.0;
-            self.player_kart2.sprite.speed = 0.0;
+            self.player_kart2.speed = 0.0;
             self.player_kart2.sprite.rotation_speed = 0.0;
         }
     }
