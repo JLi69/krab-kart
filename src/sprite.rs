@@ -17,6 +17,57 @@ const MAX_ROTATION_SPEED: f64 = 0.4;
 
 pub const SPRITE_SIZE: f64 = 0.1;
 
+fn camera_translate(x: f64, z: f64, cam: &Camera) -> (f64, f64) {
+    let translated_x = x - cam.trans_x;
+    let translated_z = z - cam.trans_z;
+    (translated_x, translated_z)
+}
+
+fn camera_rotate(x: f64, z: f64, cam: &Camera) -> (f64, f64) {
+    let rotated_x = x * cam.rotation.cos() - z * cam.rotation.sin();
+    let rotated_z = z * cam.rotation.cos() + x * (cam.rotation).sin();
+    (rotated_x, rotated_z)
+}
+
+fn screen_dimensions(w: f64, h: f64, z: f64) -> (f64, f64) {
+    (w / z, h / z)
+}
+
+fn screen_position(x: f64, z: f64, cam: &Camera, buff_w: usize, buff_h: usize) -> (f64, f64) {
+    let buff_w = buff_w as f64;
+    let buff_h = buff_h as f64;
+
+    let depth = (cam.z_far - cam.z_near) / (z - cam.z_near);
+    let spr_screen_y = buff_h * depth * 5.0 / 8.0 + buff_h * 3.0 / 8.0;
+
+    let startx = cam.x_near1 + (cam.x_far1 - cam.x_near1) / depth;
+    let endx = cam.x_near2 + (cam.x_far2 - cam.x_near2) / depth;
+    let spr_screen_x = (x - startx) / (endx - startx) * buff_w;
+
+    (spr_screen_x, spr_screen_y)
+}
+
+//Returns true of the aspect ratio of the canvas is less than the aspect ratio
+//of the pixel buffer size
+fn cmp_aspect(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> bool {
+    let (canv_w, canv_h) = canvas_dimensions;
+    (canv_h * buff_w as u32) / (buff_h as u32) > canv_w 
+}
+
+fn get_rect_x_offset(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> i32 {
+    let (canv_w, canv_h) = (canvas_dimensions.0 as i32, canvas_dimensions.1 as i32);
+    let buff_w = buff_w as i32;
+    let buff_h = buff_h as i32;
+    -(canv_h * buff_w / buff_h) / 2 + canv_w / 2
+}
+
+fn get_rect_y_offset(canvas_dimensions: (u32, u32), buff_w: usize, buff_h: usize) -> i32 {
+    let (canv_w, canv_h) = (canvas_dimensions.0 as i32, canvas_dimensions.1 as i32);
+    let buff_w = buff_w as i32;
+    let buff_h = buff_h as i32;
+    -(canv_w * buff_h / buff_w) / 2 + canv_h / 2
+}
+
 #[derive(PartialEq, Eq, Hash, Copy, Clone)]
 pub enum SpriteType {
     Kart1,
@@ -110,87 +161,58 @@ impl Sprite {
         &self,
         canv: &mut Canvas<Window>,
         cam: &Camera,
-        pixel_buff_width: usize,
-        pixel_buff_height: usize,
-        canvas_dimensions: &(u32, u32),
-        canvas_origin: &(i32, i32),
+        buff_w: usize,
+        buff_h: usize,
+        canvas_dimensions: (u32, u32),
+        canvas_origin: (i32, i32),
         sprite_assets: &HashMap<SpriteType, Texture>,
     ) -> Result<(), String> {
-        let trans_sprite_x = (self.trans_x - cam.trans_x) * (cam.rotation).cos()
-            - (self.trans_z - cam.trans_z) * (cam.rotation).sin();
-        let trans_sprite_z = (self.trans_z - cam.trans_z) * (cam.rotation).cos()
-            + (self.trans_x - cam.trans_x) * (cam.rotation).sin();
-
+        let (cam_x, cam_z) = camera_translate(self.trans_x, self.trans_z, cam);
+        let (trans_sprite_x, trans_sprite_z) = camera_rotate(cam_x, cam_z, cam);
         //Scale sprite based on how far it is from the camera
-        let sprite_w = self.width / (trans_sprite_z);
-        let sprite_h = self.height / (trans_sprite_z);
+        let (sprite_w, sprite_h) = screen_dimensions(
+            self.width, 
+            self.height, 
+            trans_sprite_z
+        );
+        //Get the sprite's position on the screen
+        let (spr_screen_x, spr_screen_y) = screen_position(
+            trans_sprite_x, 
+            trans_sprite_z, 
+            cam, 
+            buff_w, 
+            buff_h 
+        );
+        
+        let (canv_w, canv_h) = (canvas_dimensions.0 as f64, canvas_dimensions.1 as f64);
+        let (origin_x, origin_y) = canvas_origin;
+        let sprite_rect = if cmp_aspect(canvas_dimensions, buff_w, buff_h) {
+            let x_offset = get_rect_x_offset(canvas_dimensions, buff_w, buff_h);
+            let aspect = buff_w as f64 / buff_h as f64;
 
-        let spr_screen_y = pixel_buff_height as f64 * (cam.z_far - cam.z_near)
-            / ((trans_sprite_z - cam.z_near) * 8.0 / 5.0)
-            + pixel_buff_height as f64 / 8.0 * 3.0;
-        let depth = (cam.z_far - cam.z_near) / (trans_sprite_z - cam.z_near);
+            let w = sprite_w * canv_h * aspect;
+            let h = sprite_h * canv_h * aspect;
+            let x = (canv_h * aspect * spr_screen_x / buff_w as f64 - w / 2.0) as i32;
+            let y = (canv_h * spr_screen_y / buff_h as f64 - h) as i32;
 
-        let startx = cam.x_near1 + (cam.x_far1 - cam.x_near1) / depth;
-        let endx = cam.x_near2 + (cam.x_far2 - cam.x_near2) / depth;
-        let spr_screen_x = (trans_sprite_x - startx) / (endx - startx) * pixel_buff_width as f64;
-
-        let sprite_rect = if canvas_dimensions.1 * pixel_buff_width as u32
-            / pixel_buff_height as u32
-            > canvas_dimensions.0
-        {
-            let x_offset = -(canvas_dimensions.1 as i32 * pixel_buff_width as i32
-                / pixel_buff_height as i32)
-                / 2
-                + canvas_dimensions.0 as i32 / 2_i32;
-
-            Rect::new(
-                ((canvas_dimensions.1 as f64 * pixel_buff_width as f64 / pixel_buff_height as f64)
-                    * (spr_screen_x)
-                    / (pixel_buff_width as f64)
-                    - sprite_w / 2.0
-                        * (canvas_dimensions.1 as f64 * pixel_buff_width as f64
-                            / pixel_buff_height as f64)) as i32
-                    + x_offset
-                    + canvas_origin.0,
-                (canvas_dimensions.1 as f64 * (spr_screen_y) / (pixel_buff_height as f64)
-                    - sprite_h
-                        * (canvas_dimensions.1 as f64 * pixel_buff_width as f64
-                            / pixel_buff_height as f64)) as i32
-                    + canvas_origin.1,
-                (sprite_w * canvas_dimensions.1 as f64 * pixel_buff_width as f64
-                    / pixel_buff_height as f64) as u32,
-                (sprite_h * canvas_dimensions.1 as f64 * pixel_buff_width as f64
-                    / pixel_buff_height as f64) as u32,
-            )
+            Rect::new(x + x_offset + origin_x, y + origin_y, w as u32, h as u32)
         } else {
-            let y_offset = -(canvas_dimensions.0 as i32 * pixel_buff_height as i32
-                / pixel_buff_width as i32)
-                / 2
-                + canvas_dimensions.1 as i32 / 2_i32;
+            let y_offset = get_rect_y_offset(canvas_dimensions, buff_w, buff_h);
+            let aspect_inv = buff_h as f64 / buff_w as f64;
 
-            Rect::new(
-                (canvas_dimensions.0 as f64 * (spr_screen_x) / (pixel_buff_width as f64)
-                    - sprite_w / 2.0 * (canvas_dimensions.0 as f64)) as i32
-                    + canvas_origin.0,
-                ((canvas_dimensions.0 as f64 * pixel_buff_height as f64 / pixel_buff_width as f64)
-                    * (spr_screen_y)
-                    / (pixel_buff_height as f64)
-                    - sprite_h * (canvas_dimensions.0 as f64)) as i32
-                    + y_offset
-                    + canvas_origin.1,
-                (sprite_w * canvas_dimensions.0 as f64) as u32,
-                (sprite_h * canvas_dimensions.0 as f64) as u32,
-            )
+            let w = sprite_w * canv_w;
+            let h = sprite_h * canv_w;
+            let x = (canv_w * spr_screen_x / buff_w as f64 - w / 2.0) as i32;
+            let y = (canv_w * aspect_inv * spr_screen_y / buff_h as f64 - h) as i32;
+
+            Rect::new(x + origin_x, y + y_offset + origin_y, w as u32, h as u32)
         };
 
         if sprite_h > 0.005 {
             if let Some(tex) = sprite_assets.get(&self.sprite_type) {
-                canv.copy(
-                    tex,
-                    Rect::new(self.get_rotation_frame(cam) * 32, 0, 32, 32),
-                    sprite_rect,
-                )
-                .map_err(|e| e.to_string())?;
+                let frame = self.get_rotation_frame(cam);
+                let tex_rect = Rect::new(frame * 32, 0, 32, 32);
+                canv.copy(tex, tex_rect, sprite_rect).map_err(|e| e.to_string())?;
             }
         }
 

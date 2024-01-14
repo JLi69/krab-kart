@@ -12,9 +12,9 @@ pub fn display_sprites(
     canvas: &mut Canvas<Window>,
     cam: &Camera,
     sprites: &[&Sprite],
-    canvas_dimensions: &(u32, u32),
+    canvas_dimensions: (u32, u32),
     offset_y: i32,
-    canvas_origin: &(i32, i32),
+    canvas_origin: (i32, i32),
     pix_buff_w: usize,
     pix_buff_h: usize,
     sprite_assets: &HashMap<SpriteType, Texture>,
@@ -43,7 +43,7 @@ pub fn display_sprites(
                 pix_buff_w,
                 pix_buff_h,
                 canvas_dimensions,
-                &(canvas_origin.0, canvas_origin.1 + offset_y),
+                (canvas_origin.0, canvas_origin.1 + offset_y),
                 sprite_assets,
             )
             .map_err(|e| e.to_string())?;
