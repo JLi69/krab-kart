@@ -186,15 +186,12 @@ impl Level {
                         | (pixel_buffer[offset + 2] as u32) << 8
                         | 0xff;
 
-                    match track_textures.get(&pixel_value) {
-                        Some(bitmap) => {
-                            bitmap.sample(
-                                (trans_x / 16.0).abs().fract(),
-                                (trans_z / 16.0).abs().fract(),
-                                &mut pixel_buffer[offset..(offset + 3)],
-                            );
-                        }
-                        _ => {}
+                    if let Some(bitmap) = track_textures.get(&pixel_value) {
+                        bitmap.sample(
+                            (trans_x / 16.0).abs().fract(),
+                            (trans_z / 16.0).abs().fract(),
+                            &mut pixel_buffer[offset..(offset + 3)],
+                        );
                     }
 
                     continue;
@@ -211,15 +208,12 @@ impl Level {
                     | (pixel_buffer[offset + 2] as u32) << 8
                     | 0xff;
 
-                match track_textures.get(&pixel_value) {
-                    Some(bitmap) => {
-                        bitmap.sample(
-                            (trans_x / 16.0).abs().fract(),
-                            (trans_z / 16.0).abs().fract(),
-                            &mut pixel_buffer[offset..(offset + 3)],
-                        );
-                    }
-                    _ => {}
+                if let Some(bitmap) = track_textures.get(&pixel_value) {
+                    bitmap.sample(
+                        (trans_x / 16.0).abs().fract(),
+                        (trans_z / 16.0).abs().fract(),
+                        &mut pixel_buffer[offset..(offset + 3)],
+                    );
                 }
             }
         }

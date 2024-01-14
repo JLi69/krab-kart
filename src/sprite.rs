@@ -3,6 +3,7 @@ use sdl2::rect::Rect;
 use sdl2::render::{Canvas, Texture};
 use sdl2::video::Window;
 use std::collections::HashMap;
+use std::f64::consts::PI;
 
 pub mod bitmap;
 pub mod enemy;
@@ -133,9 +134,8 @@ impl Sprite {
         let endx = cam.x_near2 + (cam.x_far2 - cam.x_near2) / depth;
         let spr_screen_x = (trans_sprite_x - startx) / (endx - startx) * pixel_buff_width as f64;
 
-        let sprite_rect: Rect;
-
-        if canvas_dimensions.1 * pixel_buff_width as u32 / pixel_buff_height as u32
+        let sprite_rect = if canvas_dimensions.1 * pixel_buff_width as u32
+            / pixel_buff_height as u32
             > canvas_dimensions.0
         {
             let x_offset = -(canvas_dimensions.1 as i32 * pixel_buff_width as i32
@@ -143,7 +143,7 @@ impl Sprite {
                 / 2
                 + canvas_dimensions.0 as i32 / 2_i32;
 
-            sprite_rect = Rect::new(
+            Rect::new(
                 ((canvas_dimensions.1 as f64 * pixel_buff_width as f64 / pixel_buff_height as f64)
                     * (spr_screen_x)
                     / (pixel_buff_width as f64)
@@ -161,14 +161,14 @@ impl Sprite {
                     / pixel_buff_height as f64) as u32,
                 (sprite_h * canvas_dimensions.1 as f64 * pixel_buff_width as f64
                     / pixel_buff_height as f64) as u32,
-            );
+            )
         } else {
             let y_offset = -(canvas_dimensions.0 as i32 * pixel_buff_height as i32
                 / pixel_buff_width as i32)
                 / 2
                 + canvas_dimensions.1 as i32 / 2_i32;
 
-            sprite_rect = Rect::new(
+            Rect::new(
                 (canvas_dimensions.0 as f64 * (spr_screen_x) / (pixel_buff_width as f64)
                     - sprite_w / 2.0 * (canvas_dimensions.0 as f64)) as i32
                     + canvas_origin.0,
@@ -180,20 +180,17 @@ impl Sprite {
                     + canvas_origin.1,
                 (sprite_w * canvas_dimensions.0 as f64) as u32,
                 (sprite_h * canvas_dimensions.0 as f64) as u32,
-            );
-        }
+            )
+        };
 
         if sprite_h > 0.005 {
-            match sprite_assets.get(&self.sprite_type) {
-                Some(tex) => {
-                    canv.copy(
-                        tex,
-                        Rect::new(self.get_rotation_frame(cam) * 32, 0, 32, 32),
-                        sprite_rect,
-                    )
-                    .map_err(|e| e.to_string())?;
-                }
-                _ => {}
+            if let Some(tex) = sprite_assets.get(&self.sprite_type) {
+                canv.copy(
+                    tex,
+                    Rect::new(self.get_rotation_frame(cam) * 32, 0, 32, 32),
+                    sprite_rect,
+                )
+                .map_err(|e| e.to_string())?;
             }
         }
 
@@ -228,15 +225,14 @@ impl Sprite {
             return self.get_kart_rotation_frame();
         }
 
-        let mut trans_angle =
-            self.rotation - cam.rotation + 3.141459 / (self.frame_count as f64 * 2.0);
+        let mut trans_angle = self.rotation - cam.rotation + PI / (self.frame_count as f64 * 2.0);
         while trans_angle < 0.0 {
-            trans_angle += 3.14159 * 2.0;
+            trans_angle += PI * 2.0;
         }
-        while trans_angle >= 3.14159 * 2.0 {
-            trans_angle -= 3.14159 * 2.0;
+        while trans_angle >= PI * 2.0 {
+            trans_angle -= PI * 2.0;
         }
-        (trans_angle / (3.14159 / (self.frame_count as f64 / 2.0))).floor() as i32
+        (trans_angle / (PI / (self.frame_count as f64 / 2.0))).floor() as i32
     }
 
     //Returns distance to camera squared

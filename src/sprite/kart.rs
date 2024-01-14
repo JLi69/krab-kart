@@ -110,7 +110,7 @@ impl Kart {
             while self.sprite.rotation < 0.0 {
                 self.sprite.rotation += std::f64::consts::PI * 2.0;
             }
-            while self.sprite.rotation >= 3.14159 * 2.0 {
+            while self.sprite.rotation >= std::f64::consts::PI * 2.0 {
                 self.sprite.rotation -= std::f64::consts::PI * 2.0;
             }
 

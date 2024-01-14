@@ -235,23 +235,20 @@ pub fn display_powerup_icons(
     y: i32,
 ) -> Result<(), String> {
     for i in 0..kart.powerup_amt {
-        match icons.get(&kart.powerup) {
-            Some(tex) => {
-                canvas
-                    .copy(
-                        tex,
-                        None,
-                        Rect::new(
-                            x + i as i32 * icon_sz as i32 / 4 * 3
-                                - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3,
-                            y,
-                            icon_sz,
-                            icon_sz,
-                        ),
-                    )
-                    .map_err(|e| e.to_string())?;
-            }
-            _ => {}
+        if let Some(tex) = icons.get(&kart.powerup) {
+            canvas
+                .copy(
+                    tex,
+                    None,
+                    Rect::new(
+                        x + i as i32 * icon_sz as i32 / 4 * 3
+                            - icon_sz as i32 * kart.powerup_amt as i32 / 8 * 3,
+                        y,
+                        icon_sz,
+                        icon_sz,
+                    ),
+                )
+                .map_err(|e| e.to_string())?;
         }
     }
 
