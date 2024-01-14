@@ -23,33 +23,7 @@ pub fn display_sprites(
     buff_dimensions: (usize, usize),
     sprite_assets: &HashMap<SpriteType, Texture>,
 ) -> Result<(), String> {
-    //Draw the sprites
-    /*if canvas_dimensions.1 * buff_w as u32 / buff_h as u32 > canvas_dimensions.0 {
-        for spr in sprites {
-            //spr.set_rotation_frame(cam);
-            spr.display(
-                canvas,
-                cam,
-                buff_dimensions,
-                canvas_dimensions,
-                canvas_origin,
-                sprite_assets,
-            )?;
-        }
-    } else {
-        for spr in sprites {
-            //spr.set_rotation_frame(cam);
-            spr.display(
-                canvas,
-                cam,
-                buff_dimensions,
-                canvas_dimensions,
-                (canvas_origin.0, canvas_origin.1 + offset_y),
-                sprite_assets,
-            )?;
-        }
-    }*/
-
+    //Draw the sprites 
     for spr in sprites {
         spr.display(
             canvas,
