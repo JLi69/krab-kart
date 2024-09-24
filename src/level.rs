@@ -82,7 +82,6 @@ pub struct Camera {
     pub trans_x: f64,
     pub trans_z: f64,
     pub rotation: f64,
-    pub fov: f64,
     pub x_near1: f64,
     pub x_near2: f64,
     pub x_far1: f64,
@@ -267,7 +266,6 @@ impl Camera {
             trans_x: x,
             trans_z: z,
             rotation: cam_rot,
-            fov: cam_fov,
 
             x_near1: cam_x_near1,
             x_near2: cam_x_near2,
@@ -291,7 +289,6 @@ impl Camera {
             trans_x: spr.trans_x - spr.rotation.sin() * dist,
             trans_z: spr.trans_z - spr.rotation.cos() * dist,
             rotation: spr.rotation,
-            fov: cam_fov,
 
             x_near1: cam_x_near1,
             x_near2: cam_x_near2,

@@ -23,7 +23,7 @@ pub fn display_sprites(
     buff_dimensions: (usize, usize),
     sprite_assets: &HashMap<SpriteType, Texture>,
 ) -> Result<(), String> {
-    //Draw the sprites 
+    //Draw the sprites
     for spr in sprites {
         spr.display(
             canvas,

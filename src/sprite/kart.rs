@@ -149,9 +149,9 @@ impl Kart {
 
         self.speed += (self.acceleration - self.friction) * dt;
 
-        if self.sprite.rotation_speed > self.max_rotation_speed {
-            self.sprite.rotation_speed = self.max_rotation_speed;
-        }
+        let min = -self.max_rotation_speed;
+        let max = self.max_rotation_speed;
+        self.sprite.rotation_speed = self.sprite.rotation_speed.clamp(min, max);
 
         if self.speed < 0.0 {
             self.speed = 0.0;

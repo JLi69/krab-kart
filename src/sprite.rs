@@ -99,7 +99,6 @@ pub struct Sprite {
     pub camera_kart: bool, //Stores if it is the kart that is focused on in the camera
     pub width: f64,
     pub height: f64,
-    pub frame: i32,
     pub frame_count: i32, //Number of rotation frames that the sprite has
     pub sprite_type: SpriteType,
 }
@@ -113,7 +112,6 @@ impl Sprite {
             rotation_speed: 0.0,
             width: DEFAULT_SPRITE_SIZE,
             height: DEFAULT_SPRITE_SIZE,
-            frame: 0,
             frame_count: 1,
             camera_kart: false,
             sprite_type: spr_type,
@@ -129,7 +127,6 @@ impl Sprite {
             rotation_speed: 0.0,
             width: DEFAULT_SPRITE_SIZE,
             height: DEFAULT_SPRITE_SIZE,
-            frame: 0,
             frame_count: 1,
             camera_kart: false,
             sprite_type: spr_type,
